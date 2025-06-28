@@ -1,0 +1,106 @@
+{
+  "name": "oatsjs",
+  "version": "2.0.0",
+  "description": "🌾 OATS - OpenAPI TypeScript Sync. The missing link between your OpenAPI specs and TypeScript applications. Automatically watch, generate, and sync TypeScript clients from your API definitions.",
+  "keywords": [
+    "oats",
+    "oatsjs",
+    "openapi",
+    "swagger",
+    "typescript",
+    "api",
+    "client",
+    "generator",
+    "sync",
+    "watch",
+    "microservices",
+    "development",
+    "orchestrator",
+    "monorepo",
+    "developer-tools",
+    "dx",
+    "automation",
+    "tsoa",
+    "openapi-typescript",
+    "api-codegen",
+    "type-generation"
+  ],
+  "author": "Hari Shekhar",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "bin": {
+    "oatsjs": "./dist/bin/oats.js"
+  },
+  "files": [
+    "dist/",
+    "schema/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist coverage",
+    "build": "npm run clean && tsc",
+    "build:watch": "tsc --watch",
+    "dev": "tsx watch src/bin/oats.ts",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/ --ext .ts,.tsx",
+    "lint:fix": "npm run lint -- --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,json}\"",
+    "typecheck": "tsc --noEmit",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run typecheck && npm run lint && npm test",
+    "release": "npm version patch && npm publish",
+    "release:minor": "npm version minor && npm publish",
+    "release:major": "npm version major && npm publish"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.0",
+    "commander": "^12.0.0",
+    "chalk": "^5.3.0",
+    "ora": "^8.0.1",
+    "inquirer": "^9.2.15",
+    "lodash.debounce": "^4.0.8",
+    "joi": "^17.12.0",
+    "find-up": "^7.0.0",
+    "execa": "^8.0.1",
+    "detect-port": "^1.5.1",
+    "node-notifier": "^10.0.1",
+    "glob": "^10.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/jest": "^29.5.0",
+    "@types/inquirer": "^9.0.0",
+    "@types/node-notifier": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-jest": "^27.6.0",
+    "eslint-plugin-prettier": "^5.1.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.2.5",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0",
+    "eslint-import-resolver-typescript": "^3.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shekhardtu/oatsjs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shekhardtu/oatsjs/issues"
+  },
+  "homepage": "https://github.com/shekhardtu/oatsjs#readme"
+}

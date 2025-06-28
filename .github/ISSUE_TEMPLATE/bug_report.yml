@@ -1,0 +1,173 @@
+name: Bug Report
+description: Create a report to help us improve oatsjs
+title: "[Bug]: "
+labels: ["bug", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! Please provide as much detail as possible.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Tell us what happened
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Install oatsjs with '...'
+        2. Create config file with '...'
+        3. Run command '...'
+        4. See error
+      value: |
+        1. 
+        2. 
+        3. 
+        4. 
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: A clear and concise description of what actually happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: oats.config.json
+      description: Please paste your oats.config.json file content (remove any sensitive information)
+      render: json
+      placeholder: |
+        {
+          "services": [
+            {
+              "name": "example-service",
+              "openApiUrl": "http://localhost:3000/api-docs.json",
+              "outputDir": "./generated/example-client"
+            }
+          ]
+        }
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs
+      description: Please paste any relevant error logs
+      render: shell
+      placeholder: |
+        Error output from oatsjs command
+
+  - type: dropdown
+    id: version
+    attributes:
+      label: oatsjs Version
+      description: What version of oatsjs are you running?
+      options:
+        - Latest
+        - 1.0.5
+        - 1.0.4
+        - 1.0.3
+        - 1.0.2
+        - 1.0.1
+        - 1.0.0
+        - Other (please specify in additional context)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: node-version
+    attributes:
+      label: Node.js Version
+      description: What version of Node.js are you using?
+      options:
+        - "21.x"
+        - "20.x (LTS)"
+        - "18.x (LTS)"
+        - Other (please specify in additional context)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - macOS
+        - Windows
+        - Linux (Ubuntu/Debian)
+        - Linux (RHEL/CentOS/Fedora)
+        - Linux (Other)
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: package-manager
+    attributes:
+      label: Package Manager
+      description: Which package manager are you using?
+      options:
+        - npm
+        - yarn
+        - pnpm
+        - bun
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: environment
+    attributes:
+      label: Environment
+      description: Please check all that apply
+      options:
+        - label: This happens in a monorepo setup
+        - label: This happens in a Docker container
+        - label: This happens in CI/CD environment
+        - label: I'm using TypeScript
+        - label: I'm using a custom tsconfig.json
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here (screenshots, related issues, workarounds, etc.)
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our Code of Conduct
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
+
+  - type: checkboxes
+    id: search
+    attributes:
+      label: Existing Issues
+      description: Please search to see if an issue already exists for your problem.
+      options:
+        - label: I have searched the existing issues and this is not a duplicate
+          required: true

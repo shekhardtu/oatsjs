@@ -1,0 +1,207 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            VERSION=${{ github.event.inputs.version }}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version to release: $VERSION"
+
+      - name: Validate version format
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          if ! echo "$VERSION" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$'; then
+            echo "Invalid version format: $VERSION"
+            echo "Version must be in format X.Y.Z or X.Y.Z-tag"
+            exit 1
+          fi
+
+  test:
+    name: Test & Build
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run type checking
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build project
+        run: npm run build
+
+      - name: Verify package version
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          RELEASE_VERSION=${{ needs.validate.outputs.version }}
+          if [ "$PACKAGE_VERSION" != "$RELEASE_VERSION" ]; then
+            echo "Package version ($PACKAGE_VERSION) does not match release version ($RELEASE_VERSION)"
+            exit 1
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist/
+          retention-days: 7
+
+  publish:
+    name: Publish to npm
+    needs: [validate, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Configure npm
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          npm whoami
+
+      - name: Publish to npm
+        run: |
+          if echo "${{ needs.validate.outputs.version }}" | grep -E '-'; then
+            npm publish --tag next
+          else
+            npm publish
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Verify publication
+        run: |
+          sleep 10
+          npm view oatsjs@${{ needs.validate.outputs.version }}
+
+  release:
+    name: Create GitHub Release
+    needs: [validate, test, publish]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist/
+
+      - name: Extract changelog
+        id: changelog
+        run: |
+          VERSION=${{ needs.validate.outputs.version }}
+          # Extract the section for this version from CHANGELOG.md
+          if [ -f "CHANGELOG.md" ]; then
+            CHANGELOG=$(awk -v ver="$VERSION" '
+              /^## \[?[0-9]+\.[0-9]+\.[0-9]+/ { 
+                if (found) exit; 
+                if (index($0, ver) > 0) found=1 
+              }
+              found && /^## \[?[0-9]+\.[0-9]+\.[0-9]+/ && !index($0, ver) { exit }
+              found { print }
+            ' CHANGELOG.md | tail -n +2)
+            
+            if [ -z "$CHANGELOG" ]; then
+              CHANGELOG="Release $VERSION"
+            fi
+          else
+            CHANGELOG="Release $VERSION"
+          fi
+          
+          # Write to file to preserve formatting
+          echo "$CHANGELOG" > changelog_content.txt
+
+      - name: Create release archive
+        run: |
+          tar -czf oatsjs-${{ needs.validate.outputs.version }}.tar.gz dist/ package.json README.md LICENSE
+          zip -r oatsjs-${{ needs.validate.outputs.version }}.zip dist/ package.json README.md LICENSE
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.validate.outputs.version }}
+          name: v${{ needs.validate.outputs.version }}
+          body_path: changelog_content.txt
+          draft: false
+          prerelease: ${{ contains(needs.validate.outputs.version, '-') }}
+          files: |
+            oatsjs-${{ needs.validate.outputs.version }}.tar.gz
+            oatsjs-${{ needs.validate.outputs.version }}.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    name: Notify Release
+    needs: [validate, release]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Send notification
+        if: ${{ needs.release.result == 'success' }}
+        run: |
+          echo "Successfully released oatsjs v${{ needs.validate.outputs.version }}"
+          echo "npm: https://www.npmjs.com/package/oatsjs/v/${{ needs.validate.outputs.version }}"
+          echo "GitHub: https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate.outputs.version }}"

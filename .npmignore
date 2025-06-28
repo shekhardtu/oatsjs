@@ -1,0 +1,23 @@
+# Development files
+.gitignore
+.eslintrc.json
+.prettierrc
+.editorconfig
+
+# Test files
+test/
+*.test.js
+coverage/
+.nyc_output/
+
+# Documentation source
+docs/
+examples/
+
+# Development dependencies
+.github/
+.vscode/
+
+# Build artifacts
+*.log
+.DS_Store

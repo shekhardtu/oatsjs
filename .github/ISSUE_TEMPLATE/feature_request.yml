@@ -1,0 +1,196 @@
+name: Feature Request
+description: Suggest an idea for oatsjs
+title: "[Feature]: "
+labels: ["enhancement", "feature-request"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to request a new feature! Please provide as much detail as possible.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Feature Summary
+      description: A brief, clear summary of the feature you'd like to see added.
+      placeholder: Provide a concise description of your feature request
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? What use case does it address?
+      placeholder: |
+        As a [type of user], I want [goal] so that [benefit].
+        
+        Current pain points:
+        - Issue 1
+        - Issue 2
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like to see implemented.
+      placeholder: |
+        I would like oatsjs to support...
+        
+        This could work by...
+        
+        Example usage:
+        ```bash
+        oatsjs new-command --flag value
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Describe any alternative solutions or features you've considered.
+      placeholder: |
+        Alternative approaches could include:
+        - Option 1: ...
+        - Option 2: ...
+        
+        I prefer the proposed solution because...
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      description: What category does this feature fall into?
+      options:
+        - CLI Commands
+        - Configuration
+        - Code Generation
+        - File Watching
+        - OpenAPI Parsing
+        - TypeScript Support
+        - Error Handling
+        - Performance
+        - Developer Experience
+        - Documentation
+        - Testing
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would be helpful
+        - High - Important for my workflow
+        - Critical - Blocking my adoption
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: complexity
+    attributes:
+      label: Implementation Complexity
+      description: How complex do you think this feature would be to implement?
+      options:
+        - label: Simple - Small addition or modification
+        - label: Medium - Requires moderate changes
+        - label: Complex - Major feature requiring significant development
+        - label: Unknown - I'm not sure about the complexity
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Usage Examples
+      description: Provide concrete examples of how this feature would be used.
+      render: typescript
+      placeholder: |
+        // Example 1: Configuration
+        {
+          "newFeature": {
+            "enabled": true,
+            "options": {
+              "setting1": "value1"
+            }
+          }
+        }
+        
+        // Example 2: CLI Usage
+        oatsjs generate --with-new-feature
+        
+        // Example 3: Generated Code
+        export interface GeneratedType {
+          // new feature result
+        }
+
+  - type: textarea
+    id: benefits
+    attributes:
+      label: Benefits
+      description: What are the benefits of implementing this feature?
+      placeholder: |
+        This feature would:
+        - Improve developer productivity by...
+        - Reduce manual work by...
+        - Enable new use cases like...
+        - Better integrate with...
+
+  - type: checkboxes
+    id: breaking-changes
+    attributes:
+      label: Breaking Changes
+      description: Would this feature require breaking changes?
+      options:
+        - label: This feature could be implemented without breaking changes
+        - label: This feature might require minor breaking changes
+        - label: This feature would require major breaking changes
+        - label: I'm not sure about breaking changes
+
+  - type: textarea
+    id: similar-tools
+    attributes:
+      label: Similar Features in Other Tools
+      description: Have you seen similar features in other tools? How do they work?
+      placeholder: |
+        Tool X has a similar feature that works like...
+        Tool Y implements this differently by...
+        
+        Links:
+        - [Tool X Documentation](https://example.com)
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Are you willing to contribute to this feature?
+      options:
+        - label: I would be willing to submit a Pull Request for this feature
+        - label: I can help with testing this feature
+        - label: I can help with documentation for this feature
+        - label: I can provide feedback during development
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context, screenshots, or information about the feature request.
+      placeholder: |
+        Additional notes, mockups, or related issues...
+
+  - type: checkboxes
+    id: search
+    attributes:
+      label: Existing Features
+      description: Please search to see if a similar feature request already exists.
+      options:
+        - label: I have searched the existing issues and this is not a duplicate
+          required: true

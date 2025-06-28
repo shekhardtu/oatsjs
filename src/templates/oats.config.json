@@ -1,0 +1,41 @@
+{
+  "version": "1.0.0",
+  "services": {
+    "backend": {
+      "type": "openapi",
+      "path": "./backend",
+      "port": 4000,
+      "startCommand": "npm run dev",
+      "readyPattern": "Server listening on",
+      "apiSpec": {
+        "path": "dist/swagger.json",
+        "format": "openapi3"
+      }
+    },
+    "client": {
+      "type": "typescript-client",
+      "path": "./api-client",
+      "generator": "@hey-api/openapi-ts",
+      "packageName": "@myorg/api-client",
+      "buildCommand": "npm run build",
+      "linkCommand": "npm link",
+      "postGenerate": "npm run format"
+    },
+    "frontend": {
+      "type": "webapp",
+      "path": "./frontend",
+      "port": 3000,
+      "startCommand": "npm run dev",
+      "packageLinkCommand": "npm link",
+      "framework": "auto-detect"
+    }
+  },
+  "sync": {
+    "strategy": "smart",
+    "debounceMs": 1000,
+    "autoLink": true,
+    "notifications": true,
+    "retryAttempts": 3,
+    "retryDelayMs": 2000
+  }
+}

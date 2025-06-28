@@ -1,0 +1,60 @@
+{
+  "$schema": "https://raw.githubusercontent.com/shekhardtu/oatsjs/main/schema/oats.schema.json",
+  "version": "1.0.0",
+  "services": {
+    "backend": {
+      "path": "../backend",
+      "port": 4000,
+      "startCommand": "npm run dev",
+      "readyPattern": "Server listening on",
+      "apiSpec": {
+        "path": "src/swagger.json",
+        "format": "openapi3",
+        "watch": ["src/**/*.controller.ts"]
+      },
+      "env": {
+        "NODE_ENV": "development"
+      }
+    },
+    "client": {
+      "path": "../api-client",
+      "packageName": "@myorg/api-client",
+      "generator": "custom",
+      "generateCommand": "npm run generate",
+      "buildCommand": "npm run build",
+      "linkCommand": "npm link",
+      "postGenerate": "npm run format",
+      "autoInstall": false
+    },
+    "frontend": {
+      "path": "./frontend",
+      "port": 3000,
+      "startCommand": "npm run dev",
+      "packageLinkCommand": "npm link",
+      "framework": "react",
+      "readyPattern": "compiled successfully",
+      "env": {
+        "REACT_APP_API_URL": "http://localhost:4000"
+      }
+    }
+  },
+  "sync": {
+    "strategy": "smart",
+    "debounceMs": 1000,
+    "autoLink": true,
+    "notifications": false,
+    "retryAttempts": 3,
+    "retryDelayMs": 2000,
+    "runInitialGeneration": false,
+    "ignore": [
+      "**/*.test.ts",
+      "**/*.spec.ts",
+      "**/node_modules/**"
+    ]
+  },
+  "log": {
+    "level": "info",
+    "colors": true,
+    "timestamps": false
+  }
+}

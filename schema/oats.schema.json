@@ -1,0 +1,336 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/shekhardtu/oatsjs/main/schema/oats.schema.json",
+  "title": "OATS Configuration Schema",
+  "description": "Schema for oats.config.json - OpenAPI TypeScript Sync configuration",
+  "type": "object",
+  "required": ["services"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Schema URL for IDE support"
+    },
+    "version": {
+      "type": "string",
+      "description": "Configuration schema version",
+      "default": "1.0.0",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "services": {
+      "type": "object",
+      "description": "Service configurations",
+      "required": ["backend", "client"],
+      "properties": {
+        "backend": {
+          "$ref": "#/definitions/backendService"
+        },
+        "client": {
+          "$ref": "#/definitions/clientService"
+        },
+        "frontend": {
+          "$ref": "#/definitions/frontendService"
+        }
+      },
+      "additionalProperties": false
+    },
+    "sync": {
+      "$ref": "#/definitions/syncConfig"
+    },
+    "log": {
+      "$ref": "#/definitions/logConfig"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Custom metadata for extensions",
+      "additionalProperties": true
+    }
+  },
+  "definitions": {
+    "backendService": {
+      "type": "object",
+      "description": "Backend service configuration",
+      "required": ["path", "startCommand", "apiSpec"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Path to backend service directory",
+          "minLength": 1
+        },
+        "port": {
+          "type": "integer",
+          "description": "Backend development server port",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 4000
+        },
+        "startCommand": {
+          "type": "string",
+          "description": "Command to start the backend service",
+          "minLength": 1,
+          "examples": ["npm run dev", "yarn dev", "docker-compose up"]
+        },
+        "readyPattern": {
+          "type": "string",
+          "description": "Pattern to detect when backend is ready",
+          "default": "Server listening on"
+        },
+        "apiSpec": {
+          "$ref": "#/definitions/apiSpec"
+        },
+        "env": {
+          "type": "object",
+          "description": "Environment variables",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "cwd": {
+          "type": "string",
+          "description": "Working directory for commands"
+        }
+      },
+      "additionalProperties": false
+    },
+    "apiSpec": {
+      "type": "object",
+      "description": "API specification configuration",
+      "required": ["path"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Path to OpenAPI/Swagger spec file (relative to backend)",
+          "minLength": 1,
+          "examples": ["src/swagger.json", "docs/openapi.yaml"]
+        },
+        "format": {
+          "type": "string",
+          "description": "API specification format",
+          "enum": ["openapi3", "openapi2", "swagger2", "swagger1"],
+          "default": "openapi3"
+        },
+        "watch": {
+          "type": "array",
+          "description": "Additional paths to watch",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["src/**/*.controller.ts"]]
+        }
+      },
+      "additionalProperties": false
+    },
+    "clientService": {
+      "type": "object",
+      "description": "TypeScript client configuration",
+      "required": ["path", "packageName", "generator"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Path to client directory",
+          "minLength": 1
+        },
+        "packageName": {
+          "type": "string",
+          "description": "NPM package name",
+          "pattern": "^(@[a-z0-9-~][a-z0-9-._~]*\\/)?[a-z0-9-~][a-z0-9-._~]*$",
+          "examples": ["@myorg/api-client", "my-api-client"]
+        },
+        "generator": {
+          "type": "string",
+          "description": "Generator type",
+          "enum": ["custom", "@hey-api/openapi-ts", "swagger-typescript-api", "openapi-generator-cli"]
+        },
+        "generateCommand": {
+          "type": "string",
+          "description": "Command to generate client (required for custom generator)",
+          "examples": ["npm run generate", "yarn openapi-ts"]
+        },
+        "buildCommand": {
+          "type": "string",
+          "description": "Command to build the client",
+          "examples": ["npm run build", "yarn build"]
+        },
+        "linkCommand": {
+          "type": "string",
+          "description": "Command to link package locally",
+          "default": "npm link",
+          "examples": ["npm link", "yarn link"]
+        },
+        "generatorConfig": {
+          "type": "object",
+          "description": "Generator-specific configuration",
+          "properties": {
+            "input": {
+              "type": "string",
+              "default": "./swagger.json"
+            },
+            "output": {
+              "type": "string",
+              "default": "./src"
+            },
+            "client": {
+              "type": "string",
+              "enum": ["axios", "fetch", "xhr", "node"],
+              "default": "axios"
+            },
+            "exportCore": {
+              "type": "boolean",
+              "default": true
+            },
+            "exportServices": {
+              "type": "boolean",
+              "default": true
+            },
+            "exportModels": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "postGenerate": {
+          "type": "string",
+          "description": "Command to run after generation",
+          "examples": ["npm run format", "yarn lint:fix"]
+        },
+        "autoInstall": {
+          "type": "boolean",
+          "description": "Auto-install dependencies after generation",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "frontendService": {
+      "type": "object",
+      "description": "Frontend service configuration (optional)",
+      "required": ["path", "startCommand"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Path to frontend directory",
+          "minLength": 1
+        },
+        "port": {
+          "type": "integer",
+          "description": "Frontend development server port",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 3000
+        },
+        "startCommand": {
+          "type": "string",
+          "description": "Command to start frontend",
+          "minLength": 1,
+          "examples": ["npm start", "yarn dev", "ng serve"]
+        },
+        "packageLinkCommand": {
+          "type": "string",
+          "description": "Command to link packages",
+          "default": "npm link",
+          "examples": ["npm link", "yarn link"]
+        },
+        "framework": {
+          "type": "string",
+          "description": "Frontend framework",
+          "enum": ["react", "vue", "angular", "svelte", "next", "nuxt", "auto-detect"],
+          "default": "auto-detect"
+        },
+        "readyPattern": {
+          "type": "string",
+          "description": "Pattern to detect when frontend is ready",
+          "default": "compiled successfully"
+        },
+        "env": {
+          "type": "object",
+          "description": "Environment variables",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "syncConfig": {
+      "type": "object",
+      "description": "Synchronization configuration",
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "description": "Sync strategy",
+          "enum": ["smart", "aggressive", "conservative"],
+          "default": "smart"
+        },
+        "debounceMs": {
+          "type": "integer",
+          "description": "Debounce time in milliseconds",
+          "minimum": 0,
+          "default": 1000
+        },
+        "autoLink": {
+          "type": "boolean",
+          "description": "Automatically link packages",
+          "default": true
+        },
+        "notifications": {
+          "type": "boolean",
+          "description": "Show desktop notifications",
+          "default": false
+        },
+        "retryAttempts": {
+          "type": "integer",
+          "description": "Number of retry attempts",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 3
+        },
+        "retryDelayMs": {
+          "type": "integer",
+          "description": "Delay between retries in milliseconds",
+          "minimum": 0,
+          "default": 2000
+        },
+        "runInitialGeneration": {
+          "type": "boolean",
+          "description": "Run generation on startup",
+          "default": false
+        },
+        "ignore": {
+          "type": "array",
+          "description": "File patterns to ignore",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["**/*.test.ts", "**/*.spec.ts"]]
+        }
+      },
+      "additionalProperties": false
+    },
+    "logConfig": {
+      "type": "object",
+      "description": "Logging configuration",
+      "properties": {
+        "level": {
+          "type": "string",
+          "description": "Log level",
+          "enum": ["debug", "info", "warn", "error"],
+          "default": "info"
+        },
+        "colors": {
+          "type": "boolean",
+          "description": "Use colored output",
+          "default": true
+        },
+        "timestamps": {
+          "type": "boolean",
+          "description": "Show timestamps",
+          "default": false
+        },
+        "file": {
+          "type": "string",
+          "description": "Log file path"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
