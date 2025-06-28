@@ -6,6 +6,7 @@ import { existsSync, readFileSync } from 'fs';
 
 import ora from 'ora';
 
+import { mergeWithDefaults, validateConfig } from '../../config/schema';
 import { start } from '../start';
 
 // Mock dependencies
@@ -29,8 +30,6 @@ const mockFs = {
 };
 
 const mockOra = ora as jest.MockedFunction<typeof ora>;
-
-import { validateConfig, mergeWithDefaults } from '../../config/schema';
 const mockValidateConfig = validateConfig as jest.MockedFunction<
   typeof validateConfig
 >;

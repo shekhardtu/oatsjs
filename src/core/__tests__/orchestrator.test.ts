@@ -6,6 +6,8 @@ import EventEmitter from 'events';
 
 import { execa } from 'execa';
 
+import detectPort from 'detect-port';
+
 import { DevSyncOrchestrator } from '../orchestrator';
 
 // Mock dependencies
@@ -20,7 +22,6 @@ jest.mock('../dev-sync-optimized', () => ({
 }));
 
 const mockExeca = execa as jest.MockedFunction<typeof execa>;
-import detectPort from 'detect-port';
 const mockDetectPort = detectPort;
 
 describe('DevSyncOrchestrator', () => {

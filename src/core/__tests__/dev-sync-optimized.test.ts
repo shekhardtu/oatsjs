@@ -78,7 +78,7 @@ describe('DevSyncEngine', () => {
     },
   };
 
-  beforeEach(() => {
+  beforeEach((): void => {
     mockWatcher = new EventEmitter();
     mockWatcher.close = jest.fn().mockResolvedValue(undefined);
 
@@ -100,7 +100,7 @@ describe('DevSyncEngine', () => {
       .mockResolvedValue(undefined);
   });
 
-  afterEach(() => {
+  afterEach((): void => {
     jest.clearAllMocks();
     jest.resetAllMocks();
   });
@@ -394,16 +394,15 @@ describe('DevSyncEngine', () => {
       // Wait for debounce and error propagation
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-      // Check that generation-failed event was emitted
-      const failedEvent = syncEventSpy.mock.calls.find(
-        (call) => call[0].type === 'generation-failed'
+      // Check that generation-failed event was emitted with correct error
+      expect(syncEventSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'generation-failed',
+          error: expect.objectContaining({
+            message: expect.stringContaining('API spec file not found'),
+          }),
+        })
       );
-      expect(failedEvent).toBeDefined();
-      if (failedEvent) {
-        expect(failedEvent[0].error.message).toContain(
-          'API spec file not found'
-        );
-      }
 
       // Clean up
       process.removeListener('unhandledRejection', rejectionHandler);
