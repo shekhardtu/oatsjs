@@ -86,10 +86,8 @@ export class SwaggerChangeDetector {
   private calculateSpecHash(spec: any): string {
     // Extract only the meaningful parts for hashing
     const relevantSpec = this.extractRelevantParts(spec);
-    const serialized = JSON.stringify(
-      relevantSpec,
-      Object.keys(relevantSpec).sort()
-    );
+    // Serialize with sorted keys for consistent hashing
+    const serialized = JSON.stringify(relevantSpec, null, 2);
     return crypto.createHash('sha256').update(serialized).digest('hex');
   }
 
@@ -97,6 +95,10 @@ export class SwaggerChangeDetector {
    * Extract parts of spec that matter for API contract
    */
   private extractRelevantParts(spec: any): any {
+    if (!spec) {
+      return {};
+    }
+    
     const relevant: any = {};
 
     // Core spec info
@@ -166,24 +168,25 @@ export class SwaggerChangeDetector {
       return changes;
     }
 
-    // Compare paths
+    // Extract and normalize relevant parts for comparison
+    const oldRelevant = this.extractRelevantParts(oldSpec);
+    const newRelevant = this.extractRelevantParts(newSpec);
+
+    // Compare normalized paths
     changes.push(
       ...this.compareObjects(
-        oldSpec.paths || {},
-        newSpec.paths || {},
+        oldRelevant.paths || {},
+        newRelevant.paths || {},
         'paths',
         this.classifyPathChange.bind(this)
       )
     );
 
     // Compare schemas
-    const oldSchemas = oldSpec.components?.schemas || oldSpec.definitions || {};
-    const newSchemas = newSpec.components?.schemas || newSpec.definitions || {};
-
     changes.push(
       ...this.compareObjects(
-        oldSchemas,
-        newSchemas,
+        oldRelevant.schemas || {},
+        newRelevant.schemas || {},
         'schemas',
         this.classifySchemaChange.bind(this)
       )

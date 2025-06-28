@@ -42,6 +42,9 @@ export class DevSyncEngine extends EventEmitter {
   private debouncedSync: () => void;
   private isRunning = false;
   private lastSyncTime?: Date;
+  private syncLock = false;
+  private syncRetries = 0;
+  private readonly MAX_SYNC_RETRIES = 3;
 
   constructor(config: RuntimeConfig) {
     super();
@@ -160,6 +163,14 @@ export class DevSyncEngine extends EventEmitter {
    * Perform synchronization
    */
   private async performSync(): Promise<void> {
+    // Prevent concurrent sync operations
+    if (this.syncLock) {
+      console.log(chalk.yellow('⏳ Sync already in progress, skipping...'));
+      return;
+    }
+    
+    this.syncLock = true;
+    
     try {
       const event: SyncEvent = {
         type: 'generation-started',
@@ -190,6 +201,7 @@ export class DevSyncEngine extends EventEmitter {
       }
 
       this.lastSyncTime = new Date();
+      this.syncRetries = 0; // Reset retry count on success
       console.log(chalk.green('✅ Synchronization completed successfully'));
 
       const completedEvent: SyncEvent = {
@@ -207,7 +219,21 @@ export class DevSyncEngine extends EventEmitter {
       };
       this.emit('sync-event', failedEvent);
 
-      throw error;
+      // Retry logic with exponential backoff
+      if (this.syncRetries < this.MAX_SYNC_RETRIES) {
+        this.syncRetries++;
+        const retryDelay = Math.pow(2, this.syncRetries) * 1000;
+        console.log(chalk.yellow(`🔄 Retrying sync in ${retryDelay}ms (attempt ${this.syncRetries}/${this.MAX_SYNC_RETRIES})...`));
+        setTimeout(() => {
+          this.syncLock = false;
+          this.performSync();
+        }, retryDelay);
+      } else {
+        console.error(chalk.red('❌ Max sync retries exceeded. Manual intervention required.'));
+        this.syncRetries = 0;
+      }
+    } finally {
+      this.syncLock = false;
     }
   }
 
@@ -237,6 +263,24 @@ export class DevSyncEngine extends EventEmitter {
    */
   private async generateClient(): Promise<void> {
     console.log(chalk.blue('🏗️  Generating TypeScript client...'));
+
+    // Copy swagger.json to client directory for local generation
+    const specPath = join(
+      this.config.resolvedPaths.backend,
+      this.config.services.backend.apiSpec.path
+    );
+    const clientSwaggerPath = join(
+      this.config.resolvedPaths.client,
+      'swagger.json'
+    );
+    
+    try {
+      const { copyFileSync } = await import('fs');
+      copyFileSync(specPath, clientSwaggerPath);
+      console.log(chalk.dim('Copied swagger.json to client directory'));
+    } catch (error) {
+      console.error(chalk.red('Failed to copy swagger.json:'), error);
+    }
 
     // Implementation depends on generator type
     const { generator, generateCommand } = this.config.services.client;
@@ -288,6 +332,17 @@ export class DevSyncEngine extends EventEmitter {
           frontendLinkCommand,
           this.config.resolvedPaths.frontend!
         );
+      }
+      
+      // Touch a file in frontend to trigger HMR
+      if (this.config.services.frontend) {
+        try {
+          const touchFile = join(this.config.resolvedPaths.frontend!, 'src', '.oats-sync');
+          await this.runCommand(`touch ${touchFile}`, this.config.resolvedPaths.frontend!);
+          console.log(chalk.dim('Triggered frontend HMR'));
+        } catch (err) {
+          // Ignore errors, this is optional
+        }
       }
     }
 

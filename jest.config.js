@@ -13,6 +13,9 @@ export default {
     '^@config/(.*)$': '<rootDir>/src/config/$1',
     '^@errors/(.*)$': '<rootDir>/src/errors/$1',
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(chalk|ora|inquirer|execa|glob|find-up)/)',
+  ],
   transform: {
     '^.+\\.tsx?$': [
       'ts-jest',

@@ -55,8 +55,8 @@ describe('Error Classes', () => {
         recoverable: false,
         context: { test: true },
       });
-      expect(details.timestamp).toBeInstanceOf(Date);
-      expect(details.stack).toBeDefined();
+      expect(details['timestamp']).toBeInstanceOf(Date);
+      expect(details['stack']).toBeDefined();
     });
   });
 

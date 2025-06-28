@@ -29,6 +29,7 @@ const mockDetect = detectModule as jest.Mocked<typeof detectModule>;
 describe('Init Command', () => {
   let mockSpinner: any;
   let consoleLogSpy: jest.SpyInstance;
+  let consoleWarnSpy: jest.SpyInstance;
   let consoleErrorSpy: jest.SpyInstance;
   let processExitSpy: jest.SpyInstance;
 
@@ -47,6 +48,7 @@ describe('Init Command', () => {
 
     // Setup console spies
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
     processExitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit');
@@ -55,6 +57,7 @@ describe('Init Command', () => {
 
   afterEach(() => {
     consoleLogSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
     consoleErrorSpy.mockRestore();
     processExitSpy.mockRestore();
   });
@@ -133,7 +136,7 @@ describe('Init Command', () => {
 
       expect(mockInquirer.prompt).toHaveBeenCalled();
 
-      const writtenConfig = mockFs.writeFileSync.mock.calls[0][1] as string;
+      const writtenConfig = mockFs.writeFileSync.mock.calls[0]?.[1] as string;
       const config = JSON.parse(writtenConfig);
 
       expect(config.services.backend.path).toBe('../my-backend');
@@ -164,7 +167,7 @@ describe('Init Command', () => {
 
       await init({});
 
-      const writtenConfig = mockFs.writeFileSync.mock.calls[0][1] as string;
+      const writtenConfig = mockFs.writeFileSync.mock.calls[0]?.[1] as string;
       const config = JSON.parse(writtenConfig);
 
       expect(config.services.frontend).toBeDefined();
@@ -267,7 +270,7 @@ describe('Init Command', () => {
       expect(mockSpinner.warn).toHaveBeenCalledWith(
         'Configuration has warnings'
       );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
         expect.stringContaining('Warnings:')
       );
     });
@@ -304,7 +307,6 @@ describe('Init Command', () => {
         'Failed to create configuration'
       );
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.anything(),
         'Permission denied'
       );
     });

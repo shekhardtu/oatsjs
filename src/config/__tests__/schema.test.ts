@@ -170,7 +170,7 @@ describe('Configuration Schema', () => {
       expect(result.valid).toBe(false);
       expect(result.errors).toContainEqual(
         expect.objectContaining({
-          code: 'MISSING_GENERATE_COMMAND',
+          code: 'any.required',
           path: 'services.client.generateCommand',
         })
       );

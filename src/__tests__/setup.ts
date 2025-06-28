@@ -5,6 +5,7 @@
  */
 
 import { expect } from '@jest/globals';
+
 import { validateConfig } from '../config/schema';
 
 // Set test environment
@@ -27,21 +28,23 @@ expect.extend({
     const result = validateConfig(received);
     return {
       pass: result.valid,
-      message: () => result.valid ?
-        'Expected configuration to be invalid' :
-        `Expected configuration to be valid, but got errors:\n${result.errors.map(e => `${e.path}: ${e.message}`).join('\n')}`
+      message: () =>
+        result.valid
+          ? 'Expected configuration to be invalid'
+          : `Expected configuration to be valid, but got errors:\n${result.errors.map((e) => `${e.path}: ${e.message}`).join('\n')}`,
     };
   },
   toHaveConfigError(received, expectedPath) {
     const result = validateConfig(received);
-    const hasError = result.errors.some(e => e.path === expectedPath);
+    const hasError = result.errors.some((e) => e.path === expectedPath);
     return {
       pass: hasError,
-      message: () => hasError ?
-        `Expected configuration not to have error at path "${expectedPath}"` :
-        `Expected configuration to have error at path "${expectedPath}"`
+      message: () =>
+        hasError
+          ? `Expected configuration not to have error at path "${expectedPath}"`
+          : `Expected configuration to have error at path "${expectedPath}"`,
     };
-  }
+  },
 });
 
 // Mock file system for tests
@@ -75,8 +78,8 @@ jest.mock('chokidar', () => ({
   })),
 }));
 
-jest.mock('ora', () => {
-  return jest.fn(() => ({
+jest.mock('ora', () => 
+  jest.fn(() => ({
     start: jest.fn().mockReturnThis(),
     stop: jest.fn().mockReturnThis(),
     succeed: jest.fn().mockReturnThis(),
@@ -84,11 +87,42 @@ jest.mock('ora', () => {
     warn: jest.fn().mockReturnThis(),
     info: jest.fn().mockReturnThis(),
     text: '',
-  }));
-});
+  }))
+);
 
 jest.mock('inquirer', () => ({
   prompt: jest.fn(),
+}));
+
+jest.mock('chalk', () => ({
+  default: {
+    blue: jest.fn((str) => str),
+    green: jest.fn((str) => str),
+    red: jest.fn((str) => str),
+    yellow: jest.fn((str) => str),
+    gray: jest.fn((str) => str),
+    bold: jest.fn((str) => str),
+    dim: jest.fn((str) => str),
+    cyan: jest.fn((str) => str),
+    magenta: jest.fn((str) => str),
+  },
+  blue: jest.fn((str) => str),
+  green: jest.fn((str) => str),
+  red: jest.fn((str) => str),
+  yellow: jest.fn((str) => str),
+  gray: jest.fn((str) => str),
+  bold: jest.fn((str) => str),
+  dim: jest.fn((str) => str),
+  cyan: jest.fn((str) => str),
+  magenta: jest.fn((str) => str),
+}));
+
+jest.mock('execa', () => ({
+  execa: jest.fn(),
+}));
+
+jest.mock('glob', () => ({
+  glob: jest.fn(),
 }));
 
 // Helper to reset all mocks between tests
