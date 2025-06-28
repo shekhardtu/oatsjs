@@ -37,7 +37,7 @@ describe('DevSyncEngine', () => {
 
   // Capture unhandled rejections during tests
   beforeAll(() => {
-    unhandledRejectionHandler = (err: any) => {
+    unhandledRejectionHandler = (err: any): void => {
       // Ignore expected errors from the debounced sync function
       if (
         err?.message?.includes('Command failed') ||
@@ -186,6 +186,52 @@ describe('DevSyncEngine', () => {
       // Should trigger generation immediately
       expect(runCommandSpy).toHaveBeenCalled();
     });
+
+    it('should handle file changes and trigger sync', async () => {
+      const engine = new DevSyncEngine(defaultConfig as any);
+      const mockWatcher = {
+        on: jest.fn().mockReturnThis(),
+        close: jest.fn(),
+        add: jest.fn(),
+        unwatch: jest.fn(),
+        getWatched: jest.fn(),
+        closed: false,
+        options: {},
+        _closers: new Set(),
+        _ignoredPaths: new Set(),
+      };
+
+      mockChokidar.watch.mockReturnValue(mockWatcher as any);
+
+      await engine.start();
+      expect(mockWatcher.on).toHaveBeenCalledWith(
+        'change',
+        expect.any(Function)
+      );
+    });
+
+    it('should handle errors during sync', async () => {
+      const engine = new DevSyncEngine(defaultConfig as any);
+      const mockWatcher = {
+        on: jest.fn().mockReturnThis(),
+        close: jest.fn(),
+        add: jest.fn(),
+        unwatch: jest.fn(),
+        getWatched: jest.fn(),
+        closed: false,
+        options: {},
+        _closers: new Set(),
+        _ignoredPaths: new Set(),
+      };
+
+      mockChokidar.watch.mockReturnValue(mockWatcher as any);
+
+      await engine.start();
+      expect(mockWatcher.on).toHaveBeenCalledWith(
+        'change',
+        expect.any(Function)
+      );
+    });
   });
 
   describe('stop', () => {
@@ -299,7 +345,7 @@ describe('DevSyncEngine', () => {
     it('should handle sync errors', async () => {
       // Set up unhandled rejection handler for this test
       const unhandledRejections: Array<any> = [];
-      const rejectionHandler = (reason: any) => {
+      const rejectionHandler = (reason: any): void => {
         unhandledRejections.push(reason);
       };
       process.on('unhandledRejection', rejectionHandler);
@@ -373,7 +419,7 @@ describe('DevSyncEngine', () => {
     it('should handle missing API spec file', async () => {
       // Set up unhandled rejection handler for this test
       const unhandledRejections: Array<any> = [];
-      const rejectionHandler = (reason: any) => {
+      const rejectionHandler = (reason: any): void => {
         unhandledRejections.push(reason);
       };
       process.on('unhandledRejection', rejectionHandler);

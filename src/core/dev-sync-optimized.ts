@@ -342,6 +342,17 @@ export class DevSyncEngine extends EventEmitter {
         );
       }
 
+      // Emit event to track linked packages
+      const linkedPaths = [this.config.resolvedPaths.client];
+      if (this.config.services.frontend) {
+        linkedPaths.push(this.config.resolvedPaths.frontend!);
+      }
+
+      this.emit('packages-linked', {
+        clientPackage: this.config.services.client.packageName,
+        paths: linkedPaths,
+      });
+
       // Touch a file in frontend to trigger HMR
       if (this.config.services.frontend) {
         try {

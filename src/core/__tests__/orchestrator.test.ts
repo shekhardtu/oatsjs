@@ -12,7 +12,9 @@ import { DevSyncOrchestrator } from '../orchestrator';
 
 // Mock dependencies
 jest.mock('execa');
-jest.mock('detect-port', () => jest.fn());
+jest.mock('detect-port', () => {
+  return jest.fn().mockImplementation((port: number) => Promise.resolve(port));
+});
 jest.mock('../dev-sync-optimized', () => ({
   DevSyncEngine: jest.fn().mockImplementation(() => ({
     start: jest.fn(),
@@ -22,7 +24,7 @@ jest.mock('../dev-sync-optimized', () => ({
 }));
 
 const mockExeca = execa as jest.MockedFunction<typeof execa>;
-const mockDetectPort = detectPort;
+const mockDetectPort = jest.mocked(detectPort);
 
 describe('DevSyncOrchestrator', () => {
   let orchestrator: DevSyncOrchestrator;

@@ -9,11 +9,12 @@
 import { exec } from 'child_process';
 import { EventEmitter } from 'events';
 import { promisify } from 'util';
+import { existsSync } from 'fs';
+import { join } from 'path';
 
 import chalk from 'chalk';
 import { execa } from 'execa';
 
-// @ts-ignore - detect-port doesn't have type definitions
 import detectPort from 'detect-port';
 
 import { ServiceStartError } from '../errors/index.js';
@@ -41,6 +42,7 @@ export class DevSyncOrchestrator extends EventEmitter {
   private services: Map<string, ServiceStatus> = new Map();
   private isShuttingDown = false;
   private syncEngine?: DevSyncEngine;
+  private linkedPackages: Set<string> = new Set();
 
   constructor(config: RuntimeConfig) {
     super();
@@ -53,6 +55,17 @@ export class DevSyncOrchestrator extends EventEmitter {
       this.syncEngine.on('sync-event', (event) => {
         console.log(chalk.blue(`🔄 Sync event: ${event.type}`));
       });
+
+      // Track when packages are linked
+      this.syncEngine.on(
+        'packages-linked',
+        (packageInfo: { clientPackage: string; paths: string[] }) => {
+          this.linkedPackages.add(packageInfo.clientPackage);
+          console.log(
+            chalk.dim(`📦 Tracked linked package: ${packageInfo.clientPackage}`)
+          );
+        }
+      );
     }
   }
 
@@ -125,6 +138,11 @@ export class DevSyncOrchestrator extends EventEmitter {
     // Stop sync engine first if it's running
     if (this.syncEngine) {
       await this.syncEngine.stop();
+    }
+
+    // Unlink packages before stopping services
+    if (this.linkedPackages.size > 0) {
+      await this.unlinkPackages();
     }
 
     const stopPromises: Promise<void>[] = [];
@@ -504,6 +522,90 @@ export class DevSyncOrchestrator extends EventEmitter {
           -1
         );
       }
+    }
+  }
+
+  /**
+   * Unlink packages that were linked during the session
+   */
+  private async unlinkPackages(): Promise<void> {
+    console.log(chalk.yellow('🔗 Unlinking packages...'));
+
+    for (const packageName of this.linkedPackages) {
+      try {
+        // Detect package manager for unlink command
+        const packageManager = await this.detectPackageManager(
+          this.config.resolvedPaths.client
+        );
+        const unlinkCommand = `${packageManager} unlink`;
+
+        // Unlink in client directory
+        if (this.config.services.client) {
+          console.log(
+            chalk.dim(`Unlinking ${packageName} in client directory...`)
+          );
+          await this.runCommand(
+            unlinkCommand,
+            this.config.resolvedPaths.client
+          );
+        }
+
+        // Unlink in frontend directory if configured
+        if (this.config.services.frontend) {
+          const frontendPackageManager = await this.detectPackageManager(
+            this.config.resolvedPaths.frontend!
+          );
+          const frontendUnlinkCommand = `${frontendPackageManager} unlink ${packageName}`;
+
+          console.log(
+            chalk.dim(`Unlinking ${packageName} in frontend directory...`)
+          );
+          await this.runCommand(
+            frontendUnlinkCommand,
+            this.config.resolvedPaths.frontend!
+          );
+        }
+
+        console.log(chalk.green(`✅ Unlinked ${packageName}`));
+      } catch (error) {
+        console.warn(
+          chalk.yellow(`⚠️  Failed to unlink ${packageName}: ${error}`)
+        );
+      }
+    }
+
+    this.linkedPackages.clear();
+  }
+
+  /**
+   * Detect package manager in a directory
+   */
+  private async detectPackageManager(path: string): Promise<string> {
+    if (existsSync(join(path, 'yarn.lock'))) {
+      return 'yarn';
+    }
+    if (existsSync(join(path, 'pnpm-lock.yaml'))) {
+      return 'pnpm';
+    }
+    if (existsSync(join(path, 'package-lock.json'))) {
+      return 'npm';
+    }
+    // Default to the configured package manager or npm
+    return this.config.packageManager || 'npm';
+  }
+
+  /**
+   * Run a shell command
+   */
+  private async runCommand(command: string, cwd: string): Promise<void> {
+    try {
+      await execa(command, {
+        cwd,
+        shell: true,
+        stdio: this.config.log?.quiet ? 'pipe' : 'inherit',
+      });
+    } catch (error) {
+      throw new Error(`Command failed: ${command} - ${error}`);
     }
   }
 

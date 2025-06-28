@@ -16,17 +16,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ESLint and Prettier configuration for code quality
 - EditorConfig for consistent coding standards
 - Proper project structure with separation of concerns
+- Automatic package unlinking on shutdown to clean up linked packages
+- Package manager detection for proper unlink commands (npm, yarn, pnpm)
 
 ### Changed
 - Refactored entire codebase to TypeScript
 - Improved configuration validation with detailed error messages
 - Enhanced error handling with recoverable vs non-recoverable errors
 - Updated build process to compile TypeScript
+- Package linking is now tracked and automatically cleaned up on shutdown
 
 ### Fixed
 - Configuration validation now properly handles all edge cases
 - Frontend configuration is now properly optional
 - Sync configuration uses sensible defaults
+- Linked packages are now properly unlinked when stopping oatsjs
 
 ## [1.0.5] - 2024-06-28
 

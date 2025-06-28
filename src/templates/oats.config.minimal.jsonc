@@ -1,0 +1,29 @@
+{
+  // Schema provides IntelliSense and validation in VS Code and other IDEs
+  "$schema": "https://raw.githubusercontent.com/shekhardtu/oatsjs/main/schema/oats.schema.json",
+  
+  // Minimal configuration for OATS
+  "services": {
+    // Backend service configuration (required)
+    "backend": {
+      "path": "./backend",              // Path to your backend directory
+      "startCommand": "npm run dev",    // Command to start your backend
+      "apiSpec": {
+        "path": "dist/swagger.json"     // Path to OpenAPI spec (relative to backend)
+      }
+    },
+    
+    // Client generation configuration (required)
+    "client": {
+      "path": "./api-client",           // Where to generate the client
+      "generator": "@hey-api/openapi-ts", // Generator to use
+      "packageName": "@myorg/api-client"  // Package name for the client
+    },
+    
+    // Frontend service configuration (optional)
+    "frontend": {
+      "path": "./frontend",             // Path to your frontend directory
+      "startCommand": "npm run dev"     // Command to start your frontend
+    }
+  }
+}

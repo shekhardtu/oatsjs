@@ -1,0 +1,81 @@
+{
+  "$schema": "https://raw.githubusercontent.com/shekhardtu/oatsjs/main/schema/oats.schema.json",
+  "version": "1.0.0",
+  "services": {
+    "backend": {
+      "type": "openapi",
+      "path": "./backend",
+      "port": 4000,
+      "startCommand": "npm run dev",
+      "readyPattern": "Server listening on",
+      "apiSpec": {
+        "path": "dist/swagger.json",
+        "format": "openapi3",
+        "watch": ["src/**/*.ts", "src/**/*.controller.ts"]
+      },
+      "env": {
+        "NODE_ENV": "development",
+        "PORT": "4000"
+      }
+    },
+    "client": {
+      "type": "typescript-client",
+      "path": "./api-client",
+      "generator": "@hey-api/openapi-ts",
+      "packageName": "@myorg/api-client",
+      "generateCommand": "",
+      "buildCommand": "npm run build",
+      "linkCommand": "npm link",
+      "postGenerate": "npm run format",
+      "autoInstall": false,
+      "generatorConfig": {
+        "input": "./swagger.json",
+        "output": "./src",
+        "client": "axios",
+        "exportCore": true,
+        "exportServices": true,
+        "exportModels": true,
+        "exportSchemas": false,
+        "indent": 2,
+        "useOptions": true,
+        "useUnionTypes": true
+      }
+    },
+    "frontend": {
+      "type": "webapp",
+      "path": "./frontend",
+      "port": 3000,
+      "startCommand": "npm run dev",
+      "readyPattern": "compiled successfully",
+      "packageLinkCommand": "npm link @myorg/api-client",
+      "framework": "auto-detect",
+      "env": {
+        "REACT_APP_API_URL": "http://localhost:4000",
+        "NEXT_PUBLIC_API_URL": "http://localhost:4000",
+        "VITE_API_URL": "http://localhost:4000"
+      }
+    }
+  },
+  "sync": {
+    "strategy": "smart",
+    "debounceMs": 1000,
+    "autoLink": true,
+    "notifications": true,
+    "retryAttempts": 3,
+    "retryDelayMs": 2000,
+    "ignore": ["*.test.ts", "**/__tests__/**", "*.spec.ts"]
+  },
+  "log": {
+    "quiet": false,
+    "timestamp": true,
+    "color": true,
+    "showServiceOutput": true,
+    "level": "info"
+  },
+  "metadata": {
+    "project": "My API Project",
+    "team": "Backend Team",
+    "created": "2024-01-01",
+    "customField": "any value"
+  }
+}
