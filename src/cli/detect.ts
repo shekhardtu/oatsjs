@@ -7,7 +7,7 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { join, relative, resolve } from 'path';
+import { join, relative } from 'path';
 import { glob } from 'glob';
 
 import chalk from 'chalk';
@@ -15,7 +15,7 @@ import ora from 'ora';
 
 import type { OatsConfig } from '../types/config.types.js';
 import { validateConfig } from '../config/schema.js';
-import { FileSystemError } from '../errors/index.js';
+// import { FileSystemError } from '../errors/index.js';
 
 interface DetectOptions {
   output: string;
@@ -356,7 +356,7 @@ function detectPort(packageJson: any): number | undefined {
 
   // Look for port patterns
   const portMatch = scriptValues.match(/(?:--port|PORT=|-p\s+)(\d{4,5})/);
-  if (portMatch) {
+  if (portMatch && portMatch[1]) {
     return parseInt(portMatch[1], 10);
   }
 

@@ -97,7 +97,7 @@ export class ConfigValidationError extends ConfigError {
     context?: Record<string, unknown>
   ) {
     super(message, context);
-    this.code = 'CONFIG_VALIDATION_ERROR';
+    (this as any).code = 'CONFIG_VALIDATION_ERROR';
     this.validationErrors = validationErrors;
   }
 

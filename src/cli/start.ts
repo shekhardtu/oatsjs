@@ -7,11 +7,11 @@
  */
 
 import { existsSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { join, dirname, resolve } from 'path';
 
 import chalk from 'chalk';
 
-import { validateConfig } from '../config/schema.js';
+import { validateConfig, mergeWithDefaults } from '../config/schema.js';
 import { DevSyncOrchestrator } from '../core/orchestrator.js';
 import { ConfigError, FileSystemError } from '../errors/index.js';
 import type { OatsConfig } from '../types/config.types.js';
@@ -86,14 +86,24 @@ export async function start(options: StartOptions): Promise<void> {
       console.log(); // Empty line
     }
 
-    // Create orchestrator with options
-    const orchestrator = new DevSyncOrchestrator({
-      configPath: fullPath,
-      verbose: options.verbose,
-      notifications: options.notify,
-      runInitialGeneration: options.initGen,
-      oneTimeGeneration: options.oneTime,
-    });
+    // Create runtime config
+    const runtimeConfig = mergeWithDefaults(config) as any;
+    runtimeConfig.resolvedPaths = {
+      backend: resolve(dirname(fullPath), runtimeConfig.services.backend.path),
+      client: resolve(dirname(fullPath), runtimeConfig.services.client.path),
+      frontend: runtimeConfig.services.frontend ? 
+        resolve(dirname(fullPath), runtimeConfig.services.frontend.path) : undefined,
+      apiSpec: join(
+        resolve(dirname(fullPath), runtimeConfig.services.backend.path),
+        runtimeConfig.services.backend.apiSpec.path
+      ),
+    };
+    runtimeConfig.packageManager = 'npm'; // Could be detected
+    runtimeConfig.isCI = !!process.env['CI'];
+    runtimeConfig.startedAt = new Date();
+
+    // Create orchestrator
+    const orchestrator = new DevSyncOrchestrator(runtimeConfig);
 
     // Handle graceful shutdown
     process.on('SIGINT', async () => {

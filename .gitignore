@@ -84,3 +84,5 @@ temp/
 # Test files
 test-project/
 test-output/
+
+# git rm -r --cached .

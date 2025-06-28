@@ -49,7 +49,7 @@ export interface ApiSpecConfig {
   /**
    * Additional paths to watch for changes
    * Useful when spec is generated from source files
-   * @example ["src/**/*.controller.ts"]
+   * @example ["src/controllers/*.ts"]
    */
   watch?: string[];
 }
@@ -327,7 +327,7 @@ export interface SyncConfig {
 
   /**
    * File patterns to ignore when watching
-   * @example ["**/*.test.ts", "**/*.spec.ts"]
+   * @example ["test/**", "spec/**"]
    */
   ignore?: string[];
 }

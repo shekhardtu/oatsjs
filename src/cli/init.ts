@@ -7,7 +7,7 @@
  */
 
 import { existsSync, writeFileSync } from 'fs';
-import { join, relative, resolve } from 'path';
+import { join } from 'path';
 
 import chalk from 'chalk';
 import inquirer from 'inquirer';

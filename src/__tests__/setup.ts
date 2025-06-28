@@ -5,8 +5,8 @@
  */
 
 // Set test environment
-process.env.NODE_ENV = 'test';
-process.env.OATS_TEST = 'true';
+process.env['NODE_ENV'] = 'test';
+process.env['OATS_TEST'] = 'true';
 
 // Mock console methods to avoid noise in tests
 global.console = {
@@ -30,7 +30,7 @@ expect.extend({
         if (result.valid) {
           return `Expected configuration to be invalid`;
         } else {
-          const errors = result.errors.map(e => `${e.path}: ${e.message}`).join('\n');
+          const errors = result.errors.map((e: any) => `${e.path}: ${e.message}`).join('\n');
           return `Expected configuration to be valid, but got errors:\n${errors}`;
         }
       },
@@ -40,7 +40,7 @@ expect.extend({
   toHaveConfigError(received: any, expectedPath: string) {
     const { validateConfig } = require('../config/schema');
     const result = validateConfig(received);
-    const hasError = result.errors.some(e => e.path === expectedPath);
+    const hasError = result.errors.some((e: any) => e.path === expectedPath);
     
     return {
       pass: hasError,
@@ -54,16 +54,6 @@ expect.extend({
     };
   },
 });
-
-// Extend Jest matchers TypeScript definitions
-declare global {
-  namespace jest {
-    interface Matchers<R> {
-      toBeValidConfig(): R;
-      toHaveConfigError(path: string): R;
-    }
-  }
-}
 
 // Mock file system for tests
 jest.mock('fs', () => ({

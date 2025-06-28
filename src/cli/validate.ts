@@ -96,9 +96,10 @@ export async function validate(options: ValidateOptions): Promise<void> {
     displayPathChecks(pathChecks);
 
     // Strict mode checks
+    let strictResults: any[] = [];
     if (options.strict) {
       console.log(chalk.yellow('\n🔍 Running strict validation...\n'));
-      const strictResults = await performStrictChecks(config);
+      strictResults = await performStrictChecks(config);
       displayStrictResults(strictResults);
     }
 
@@ -109,7 +110,7 @@ export async function validate(options: ValidateOptions): Promise<void> {
 
     // Final summary
     const hasErrors = pathChecks.some(p => p.required && !p.exists) || 
-                     (options.strict && strictResults.some(r => !r.passed));
+                     (options.strict && strictResults.some((r: any) => !r.passed));
 
     if (hasErrors) {
       console.log(chalk.red('\n❌ Validation completed with errors'));

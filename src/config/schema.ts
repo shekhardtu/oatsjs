@@ -149,9 +149,8 @@ export function validateConfig(config: unknown): ConfigValidationResult {
   };
 
   // Joi validation
-  const { error, value, warning } = configSchema.validate(config, {
+  const { error, value } = configSchema.validate(config, {
     abortEarly: false,
-    warnings: true,
   });
 
   if (error) {

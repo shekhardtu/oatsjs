@@ -10,11 +10,8 @@
 
 // Core exports
 export { DevSyncOrchestrator } from './core/orchestrator.js';
-export { SwaggerChangeDetector } from './core/dev-sync-optimized.js';
-export {
-  areSwaggerFilesEquivalent,
-  getSwaggerDifferences,
-} from './core/swagger-diff.js';
+export { DevSyncEngine } from './core/dev-sync-optimized.js';
+export { SwaggerChangeDetector } from './core/swagger-diff.js';
 
 // CLI exports for programmatic usage
 export { init } from './cli/init.js';
@@ -34,7 +31,6 @@ export type {
   ApiSpecConfig,
   GeneratorConfig,
   ConfigValidationResult,
-  ConfigValidationError,
   ConfigValidationWarning,
   RuntimeConfig,
   ApiSpecFormat,
