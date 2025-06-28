@@ -369,6 +369,18 @@ export interface LogConfig {
    * Log file path (optional)
    */
   file?: string;
+
+  /**
+   * Whether to show service output (stdout/stderr from backend/frontend)
+   * @default true
+   */
+  showServiceOutput?: boolean;
+
+  /**
+   * Quiet mode - only show essential oatsjs messages
+   * @default false
+   */
+  quiet?: boolean;
 }
 
 /**

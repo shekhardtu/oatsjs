@@ -306,9 +306,7 @@ describe('Init Command', () => {
       expect(mockSpinner.fail).toHaveBeenCalledWith(
         'Failed to create configuration'
       );
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Permission denied'
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Permission denied');
     });
   });
 });

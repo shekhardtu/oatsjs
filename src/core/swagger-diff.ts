@@ -98,7 +98,7 @@ export class SwaggerChangeDetector {
     if (!spec) {
       return {};
     }
-    
+
     const relevant: any = {};
 
     // Core spec info

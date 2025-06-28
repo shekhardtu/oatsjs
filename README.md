@@ -123,14 +123,19 @@ OATS uses intelligent comparison algorithms to detect meaningful changes in your
 ### 🔄 Complete Automation
 1. **Watches** your OpenAPI/Swagger files
 2. **Detects** meaningful changes
-3. **Generates** TypeScript clients
-4. **Links** to your frontend projects
-5. **Hot-reloads** for instant feedback
+3. **Copies** swagger.json to client directory
+4. **Generates** TypeScript clients
+5. **Builds** the client package
+6. **Links** to your frontend projects
+7. **Triggers** frontend hot-reload via HMR
 
 ### 🎯 Developer Experience
+- **Port-based service detection** - More reliable than log parsing
+- **Automatic port conflict resolution** - Kills conflicting processes
 - **Colored logs** for easy tracking
 - **Clear change reporting** - know exactly what changed
-- **Error recovery** - automatic restart on failures
+- **Error recovery** - automatic retry with exponential backoff
+- **Concurrent sync prevention** - No duplicate operations
 - **Desktop notifications** (optional)
 
 ### 🔧 Flexible Configuration
@@ -171,9 +176,22 @@ Works with any OpenAPI client generator:
     }
   },
   "sync": {                           // OPTIONAL - defaults shown below
+    "strategy": "smart",             // "smart" or "always" - smart skips if no changes
     "debounceMs": 1000,              // Wait time before regenerating (ms)
+    "autoLink": true,                // Automatically link packages after generation
+    "notifications": false,          // Desktop notifications for sync events
     "retryAttempts": 3,              // Retry failed operations
-    "retryDelayMs": 2000             // Delay between retries (ms)
+    "retryDelayMs": 2000,            // Delay between retries (ms)
+    "runInitialGeneration": false,   // Generate client on startup
+    "ignore": ["**/node_modules/**"] // Paths to ignore in file watching
+  },
+  "log": {                           // OPTIONAL - logging configuration
+    "level": "info",                // Log level: debug, info, warn, error
+    "colors": true,                 // Use colored output
+    "timestamps": false,            // Show timestamps in logs
+    "showServiceOutput": true,      // Show backend/frontend console output
+    "quiet": false,                 // Quiet mode - only essential messages
+    "file": "./oats.log"           // Optional log file path
   }
 }
 ```
@@ -241,6 +259,8 @@ oatsjs start [options]
 Options:
   --init-gen        Run initial client generation on startup
   -c, --config      Path to config file (default: oats.config.json)
+  --quiet           Quiet mode - only show essential messages
+  --no-colors       Disable colored output
 ```
 
 **Examples:**
@@ -253,6 +273,12 @@ oatsjs start --init-gen
 
 # Use custom config file
 oatsjs start --config my-oats.config.json
+
+# Quiet mode - only oatsjs messages, no service output
+oatsjs start --quiet
+
+# Disable colors
+oatsjs start --no-colors
 ```
 
 ### `oatsjs init`
@@ -406,7 +432,7 @@ my-monorepo/
 ## 🤔 Common Issues & Solutions
 
 ### Issue: "Port already in use"
-**Solution:** Make sure the ports in your config aren't already taken:
+**Solution:** OATS now automatically kills processes using required ports! If you still have issues:
 ```json
 {
   "services": {
@@ -416,11 +442,19 @@ my-monorepo/
 }
 ```
 
-### Issue: "Client not updating"
-**Solution:** Check that:
+### Issue: "Client not updating in frontend"
+**Solution:** OATS now includes Vite HMR integration! Check that:
 1. Your OpenAPI spec path is correct
 2. The generator command works when run manually
 3. The package is properly linked (`yarn link` or `npm link`)
+4. For Vite users: Add to your `vite.config.ts`:
+```typescript
+export default defineConfig({
+  optimizeDeps: {
+    exclude: ['@yourorg/api-client'] // Exclude linked packages
+  }
+})
+```
 
 ### Issue: "Command not found: oatsjs"
 **Solution:** Use npx or add to package.json scripts:
@@ -439,18 +473,32 @@ npx oatsjs start
 ```
 1. Start: OATS starts your backend, frontend, and watches for changes
    ↓
-2. Watch: File watcher monitors your OpenAPI spec file
+2. Port Detection: Uses port-based detection to know when services are ready
    ↓
-3. Detect: When spec changes, OATS compares with previous version
+3. Watch: File watcher monitors your OpenAPI spec file
    ↓
-4. Generate: If changes detected, run your generator command
+4. Detect: When spec changes, OATS compares with previous version
    ↓
-5. Build: Build the TypeScript client package
+5. Copy: Copies swagger.json to client directory for local generation
    ↓
-6. Link: Ensure client is linked to frontend (yarn/npm link)
+6. Generate: Run your generator command with local spec
    ↓
-7. Reload: Frontend hot-reloads with new types
+7. Build: Build the TypeScript client package
+   ↓
+8. Link: Ensure client is linked to frontend (yarn/npm link)
+   ↓
+9. HMR Trigger: Touch .oats-sync file to trigger Vite hot-reload
+   ↓
+10. Reload: Frontend hot-reloads with new types
 ```
+
+**Robust Architecture:**
+- ⚡ Port-based service detection (no flaky log parsing)
+- 🔒 Concurrent sync prevention with operation locking
+- 🔄 Automatic retry with exponential backoff (2s, 4s, 8s)
+- 🧹 Automatic port conflict resolution
+- 📁 Local swagger.json copy for reliable generation
+- 🔥 Vite HMR integration for instant updates
 
 **Smart Detection:** OATS uses intelligent comparison to avoid unnecessary regeneration:
 - ✅ Detects real API changes (new endpoints, changed types)
@@ -499,6 +547,34 @@ yarn dev:oats
 | Hot reload | ❌ | Partial | ✅ |
 | Error recovery | ❌ | ❌ | ✅ |
 | Multi-service | ❌ | Complex | ✅ |
+
+## 🛡️ Reliability & Performance
+
+OATS is built with production reliability in mind:
+
+### Robust Service Management
+- **Port-based detection**: Services are detected by port binding, not log parsing
+- **Automatic port cleanup**: Kills existing processes on required ports before starting
+- **Health monitoring**: Continuous port checking to ensure services stay alive
+- **Graceful shutdown**: Proper cleanup of all processes and resources
+
+### Intelligent Sync Engine
+- **Concurrent operation prevention**: Lock mechanism prevents duplicate syncs
+- **Automatic retry**: Failed operations retry with exponential backoff
+- **Debounced file watching**: Prevents rapid regeneration from multiple saves
+- **Smart change detection**: Only syncs when meaningful API changes occur
+
+### Error Recovery
+- **Service crash recovery**: Emits events when services crash after startup
+- **Malformed spec handling**: Graceful error messages for invalid swagger.json
+- **Network resilience**: Handles temporary network issues during generation
+- **Resource cleanup**: Proper cleanup of intervals, watchers, and child processes
+
+### Performance Optimizations
+- **Minimal file I/O**: Efficient file watching with chokidar
+- **Smart caching**: Change detection uses efficient hashing
+- **Parallel operations**: Services start concurrently when possible
+- **Memory efficient**: Proper event listener management
 
 ## 🤝 Contributing
 

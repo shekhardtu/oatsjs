@@ -6,16 +6,18 @@
  * @module @oatsjs/core/orchestrator
  */
 
-import { EventEmitter } from 'events';
 import { exec } from 'child_process';
+import { EventEmitter } from 'events';
 import { promisify } from 'util';
 
 import chalk from 'chalk';
 import { execa } from 'execa';
+
 // @ts-ignore - detect-port doesn't have type definitions
 import detectPort from 'detect-port';
 
 import { ServiceStartError } from '../errors/index.js';
+
 import { DevSyncEngine } from './dev-sync-optimized.js';
 
 import type { RuntimeConfig } from '../types/config.types.js';
@@ -44,7 +46,7 @@ export class DevSyncOrchestrator extends EventEmitter {
     super();
     this.config = config;
     this.setupSignalHandlers();
-    
+
     // Initialize sync engine if client service is configured
     if (this.config.services.client) {
       this.syncEngine = new DevSyncEngine(config);
@@ -63,10 +65,16 @@ export class DevSyncOrchestrator extends EventEmitter {
     try {
       // Check and handle port conflicts before starting
       if (this.config.services.backend.port) {
-        await this.handlePortConflict('backend', this.config.services.backend.port);
+        await this.handlePortConflict(
+          'backend',
+          this.config.services.backend.port
+        );
       }
       if (this.config.services.frontend?.port) {
-        await this.handlePortConflict('frontend', this.config.services.frontend.port);
+        await this.handlePortConflict(
+          'frontend',
+          this.config.services.frontend.port
+        );
       }
 
       // Start backend service
@@ -90,13 +98,13 @@ export class DevSyncOrchestrator extends EventEmitter {
       }
 
       console.log(chalk.green('✅ All services started successfully'));
-      
+
       // Start sync engine after services are running
       if (this.syncEngine) {
         console.log(chalk.blue('🔄 Starting file watcher for API sync...'));
         await this.syncEngine.start();
       }
-      
+
       this.emit('ready');
     } catch (error) {
       console.error(chalk.red('❌ Failed to start services:'), error);
@@ -166,7 +174,10 @@ export class DevSyncOrchestrator extends EventEmitter {
     return new Promise((resolve, reject) => {
       console.log(chalk.dim(`Executing command: ${options.command}`));
       console.log(chalk.dim(`Working directory: ${options.cwd}`));
-      
+
+      const shouldShowOutput =
+        this.config.log?.showServiceOutput !== false && !this.config.log?.quiet;
+
       const child = execa(options.command, {
         cwd: options.cwd,
         env: {
@@ -182,9 +193,9 @@ export class DevSyncOrchestrator extends EventEmitter {
       status.process = child;
 
       let isReady = false;
-      const readyPattern = options.readyPattern;
+      const { readyPattern } = options;
       const readyRegex = readyPattern ? new RegExp(readyPattern, 'i') : null;
-      
+
       // If port is specified, prioritize port-based detection
       const usePortDetection = !!options.port;
       const useTextDetection = !!readyPattern && !usePortDetection;
@@ -192,13 +203,22 @@ export class DevSyncOrchestrator extends EventEmitter {
       // Handle stdout
       child.stdout?.on('data', (data: Buffer) => {
         const output = data.toString().trim();
-        console.log(chalk.gray(`[${name}]`), output);
+        if (shouldShowOutput) {
+          console.log(chalk.gray(`[${name}]`), output);
+        }
 
         // Only use text pattern if port detection is not available
-        if (!isReady && useTextDetection && readyRegex && readyRegex.test(output)) {
+        if (
+          !isReady &&
+          useTextDetection &&
+          readyRegex &&
+          readyRegex.test(output)
+        ) {
           isReady = true;
           status.status = 'running';
-          console.log(chalk.green(`✅ ${name} service is ready (text pattern matched)`));
+          console.log(
+            chalk.green(`✅ ${name} service is ready (text pattern matched)`)
+          );
           resolve();
         }
       });
@@ -206,16 +226,32 @@ export class DevSyncOrchestrator extends EventEmitter {
       // Handle stderr
       child.stderr?.on('data', (data: Buffer) => {
         const output = data.toString().trim();
-        console.error(chalk.red(`[${name}] ERROR:`), output);
-        
+
+        // Always show errors unless in quiet mode
+        if (
+          shouldShowOutput ||
+          (output.toLowerCase().includes('error') && !this.config.log?.quiet)
+        ) {
+          console.error(chalk.red(`[${name}] ERROR:`), output);
+        }
+
         // Only use text pattern if port detection is not available
-        if (!isReady && useTextDetection && readyRegex && readyRegex.test(output)) {
+        if (
+          !isReady &&
+          useTextDetection &&
+          readyRegex &&
+          readyRegex.test(output)
+        ) {
           isReady = true;
           status.status = 'running';
-          console.log(chalk.green(`✅ ${name} service is ready (text pattern matched from stderr)`));
+          console.log(
+            chalk.green(
+              `✅ ${name} service is ready (text pattern matched from stderr)`
+            )
+          );
           resolve();
         }
-        
+
         // Store stderr for error reporting
         if (!status.error) {
           (status as any).stderr = output;
@@ -269,8 +305,12 @@ export class DevSyncOrchestrator extends EventEmitter {
       // If port is specified, prioritize port-based detection
       let portCheckInterval: NodeJS.Timeout | undefined;
       if (usePortDetection && options.port) {
-        console.log(chalk.dim(`Using port-based detection for ${name} on port ${options.port}`));
-        
+        console.log(
+          chalk.dim(
+            `Using port-based detection for ${name} on port ${options.port}`
+          )
+        );
+
         portCheckInterval = setInterval(async () => {
           try {
             const isPortInUse = await this.isPortInUse(options.port!);
@@ -282,14 +322,18 @@ export class DevSyncOrchestrator extends EventEmitter {
               }
               isReady = true;
               status.status = 'running';
-              console.log(chalk.green(`✅ ${name} service is ready (port ${options.port} is now in use)`));
+              console.log(
+                chalk.green(
+                  `✅ ${name} service is ready (port ${options.port} is now in use)`
+                )
+              );
               resolve();
             }
           } catch (err) {
             // Ignore errors during port checking
           }
         }, 500); // Check every 500ms for faster detection
-        
+
         // Clean up interval on timeout
         setTimeout(() => {
           if (portCheckInterval) {
@@ -371,33 +415,47 @@ export class DevSyncOrchestrator extends EventEmitter {
   /**
    * Handle port conflicts by killing existing process if needed
    */
-  private async handlePortConflict(serviceName: string, port: number): Promise<void> {
+  private async handlePortConflict(
+    serviceName: string,
+    port: number
+  ): Promise<void> {
     const isInUse = await this.isPortInUse(port);
-    
+
     if (isInUse) {
-      console.log(chalk.yellow(`⚠️  Port ${port} is already in use for ${serviceName}`));
-      
+      console.log(
+        chalk.yellow(`⚠️  Port ${port} is already in use for ${serviceName}`)
+      );
+
       try {
         if (process.platform === 'darwin' || process.platform === 'linux') {
           // Get PIDs of processes using the port
           const { stdout } = await execAsync(`lsof -i :${port} -t`);
-          const pids = stdout.trim().split('\n').filter(pid => pid);
-          
+          const pids = stdout
+            .trim()
+            .split('\n')
+            .filter((pid) => pid);
+
           if (pids.length > 0) {
             for (const pid of pids) {
               if (pid) {
-                console.log(chalk.yellow(`🔪 Killing process ${pid} using port ${port}...`));
+                console.log(
+                  chalk.yellow(
+                    `🔪 Killing process ${pid} using port ${port}...`
+                  )
+                );
                 try {
                   await execAsync(`kill -9 ${pid}`);
                 } catch (err) {
-                  console.warn(chalk.yellow(`⚠️  Could not kill process ${pid}: ${err}`));
+                  console.warn(
+                    chalk.yellow(`⚠️  Could not kill process ${pid}: ${err}`)
+                  );
                 }
               }
             }
-            
+
             // Wait a bit for the port to be released
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+
             // Verify port is now free
             const stillInUse = await this.isPortInUse(port);
             if (!stillInUse) {
@@ -411,23 +469,25 @@ export class DevSyncOrchestrator extends EventEmitter {
           const { stdout } = await execAsync(`netstat -ano | findstr :${port}`);
           const lines = stdout.trim().split('\n');
           const pids = new Set<string>();
-          
-          lines.forEach(line => {
+
+          lines.forEach((line) => {
             const parts = line.trim().split(/\s+/);
             const pid = parts[parts.length - 1];
             if (pid && /^\d+$/.test(pid)) {
               pids.add(pid);
             }
           });
-          
+
           for (const pid of pids) {
-            console.log(chalk.yellow(`🔪 Killing process ${pid} using port ${port}...`));
+            console.log(
+              chalk.yellow(`🔪 Killing process ${pid} using port ${port}...`)
+            );
             await execAsync(`taskkill /F /PID ${pid}`);
           }
-          
+
           // Wait a bit for the port to be released
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
           // Verify port is now free
           const stillInUse = await this.isPortInUse(port);
           if (!stillInUse) {

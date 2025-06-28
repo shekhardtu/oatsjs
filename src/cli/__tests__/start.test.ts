@@ -31,8 +31,12 @@ const mockFs = {
 const mockOra = ora as jest.MockedFunction<typeof ora>;
 
 import { validateConfig, mergeWithDefaults } from '../../config/schema';
-const mockValidateConfig = validateConfig as jest.MockedFunction<typeof validateConfig>;
-const mockMergeWithDefaults = mergeWithDefaults as jest.MockedFunction<typeof mergeWithDefaults>;
+const mockValidateConfig = validateConfig as jest.MockedFunction<
+  typeof validateConfig
+>;
+const mockMergeWithDefaults = mergeWithDefaults as jest.MockedFunction<
+  typeof mergeWithDefaults
+>;
 
 describe('Start Command', () => {
   let mockSpinner: any;
@@ -42,17 +46,17 @@ describe('Start Command', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Default to config file existing
     mockFs.existsSync.mockReturnValue(true);
-    
+
     // Default to valid configuration
     mockValidateConfig.mockReturnValue({
       valid: true,
       errors: [],
       warnings: [],
     });
-    
+
     // Default merge with defaults
     mockMergeWithDefaults.mockImplementation((config) => ({
       ...config,
@@ -209,7 +213,6 @@ describe('Start Command', () => {
         expect.stringContaining('Failed to start OATS')
       );
     });
-
   });
 
   describe('signal handling', () => {
@@ -275,13 +278,21 @@ describe('Start Command', () => {
       };
 
       mockFs.readFileSync.mockReturnValue(JSON.stringify(invalidConfig));
-      
+
       // Mock validation to fail
       mockValidateConfig.mockReturnValue({
         valid: false,
         errors: [
-          { path: 'services.backend', message: 'Backend service is required', code: 'required' },
-          { path: 'services.client', message: 'Client service is required', code: 'required' },
+          {
+            path: 'services.backend',
+            message: 'Backend service is required',
+            code: 'required',
+          },
+          {
+            path: 'services.client',
+            message: 'Client service is required',
+            code: 'required',
+          },
         ],
         warnings: [],
       });

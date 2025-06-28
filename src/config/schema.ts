@@ -155,6 +155,12 @@ export const configSchema = Joi.object<OatsConfig>({
     colors: Joi.boolean().optional().default(true),
     timestamps: Joi.boolean().optional().default(false),
     file: Joi.string().optional(),
+    showServiceOutput: Joi.boolean().optional().default(true).messages({
+      'boolean.base': 'showServiceOutput must be a boolean',
+    }),
+    quiet: Joi.boolean().optional().default(false).messages({
+      'boolean.base': 'quiet mode must be a boolean',
+    }),
   })
     .optional()
     .default({}),

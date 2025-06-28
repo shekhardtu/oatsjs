@@ -16,46 +16,46 @@ describe('SwaggerChangeDetector', () => {
     it('should detect changes in swagger spec', () => {
       const originalSpec = {
         info: { version: '1.0.0', title: 'API' },
-        paths: { 
-          '/users': { 
+        paths: {
+          '/users': {
             get: {
               operationId: 'getUsers',
               summary: 'Get all users',
               responses: {
-                '200': { description: 'Success' }
-              }
-            } 
-          } 
+                '200': { description: 'Success' },
+              },
+            },
+          },
         },
       };
 
       const updatedSpec = {
         info: { version: '1.0.1', title: 'API' },
-        paths: { 
-          '/users': { 
+        paths: {
+          '/users': {
             get: {
               operationId: 'getUsers',
               summary: 'Get all users',
               responses: {
-                '200': { description: 'Success' }
-              }
-            }, 
+                '200': { description: 'Success' },
+              },
+            },
             post: {
               operationId: 'createUser',
               summary: 'Create a user',
               responses: {
-                '201': { description: 'Created' }
-              }
-            } 
+                '201': { description: 'Created' },
+              },
+            },
           },
-          '/posts': { 
+          '/posts': {
             get: {
               operationId: 'getPosts',
               summary: 'Get all posts',
               responses: {
-                '200': { description: 'Success' }
-              }
-            } 
+                '200': { description: 'Success' },
+              },
+            },
           },
         },
       };
@@ -77,7 +77,7 @@ describe('SwaggerChangeDetector', () => {
 
       // First check
       changeDetector.hasSignificantChanges(spec);
-      
+
       // Second check with same content
       const hasChanged = changeDetector.hasSignificantChanges(spec);
       expect(hasChanged).toBe(false);
@@ -117,7 +117,7 @@ describe('SwaggerChangeDetector', () => {
 
       // First check
       changeDetector.hasSignificantChanges(originalSpec);
-      
+
       // Second check with updated spec
       const hasChanged = changeDetector.hasSignificantChanges(updatedSpec);
       expect(hasChanged).toBe(true);
@@ -125,28 +125,28 @@ describe('SwaggerChangeDetector', () => {
 
     it('should ignore non-significant changes', () => {
       const originalSpec = {
-        info: { 
-          version: '1.0.0', 
+        info: {
+          version: '1.0.0',
           title: 'API',
           description: 'Original description',
-          contact: { email: 'test@example.com' }
+          contact: { email: 'test@example.com' },
         },
         paths: { '/users': { get: {} } },
       };
 
       const updatedSpec = {
-        info: { 
-          version: '1.0.0', 
+        info: {
+          version: '1.0.0',
           title: 'API',
           description: 'Updated description', // Non-significant change
-          contact: { email: 'new@example.com' } // Non-significant change
+          contact: { email: 'new@example.com' }, // Non-significant change
         },
         paths: { '/users': { get: {} } },
       };
 
       // First check
       changeDetector.hasSignificantChanges(originalSpec);
-      
+
       // Second check - should not detect significant changes
       const hasChanged = changeDetector.hasSignificantChanges(updatedSpec);
       expect(hasChanged).toBe(false);
@@ -162,14 +162,14 @@ describe('SwaggerChangeDetector', () => {
 
       const updatedSpec = {
         info: { version: '1.0.1', title: 'API' },
-        paths: { 
+        paths: {
           '/users': { get: {}, post: {} },
           '/posts': { get: {} },
         },
       };
 
       const changes = changeDetector.analyzeChanges(originalSpec, updatedSpec);
-      
+
       expect(changes).toBeDefined();
       expect(changes.hasChanges).toBe(true);
       expect(changes.summary).toBeDefined();
@@ -184,7 +184,7 @@ describe('SwaggerChangeDetector', () => {
       };
 
       const changes = changeDetector.analyzeChanges(spec, spec);
-      
+
       expect(changes.hasChanges).toBe(false);
       expect(changes.summary.major).toBe(0);
       expect(changes.summary.minor).toBe(0);
@@ -195,10 +195,10 @@ describe('SwaggerChangeDetector', () => {
       const originalSpec = {
         info: { version: '1.0.0', title: 'API' },
         paths: {
-          '/users': { 
+          '/users': {
             get: {
-              responses: { '200': { description: 'Success' } }
-            }
+              responses: { '200': { description: 'Success' } },
+            },
           },
         },
       };
@@ -206,23 +206,25 @@ describe('SwaggerChangeDetector', () => {
       const updatedSpec = {
         info: { version: '2.0.0', title: 'API' }, // Major version change
         paths: {
-          '/users': { 
+          '/users': {
             get: {
-              responses: { 
+              responses: {
                 '200': { description: 'Success' },
-                '404': { description: 'Not Found' } // New response
-              }
+                '404': { description: 'Not Found' }, // New response
+              },
             },
-            post: {} // New method
+            post: {}, // New method
           },
           '/posts': { get: {} }, // New endpoint
         },
       };
 
       const changes = changeDetector.analyzeChanges(originalSpec, updatedSpec);
-      
+
       expect(changes.hasChanges).toBe(true);
-      expect(changes.summary.major + changes.summary.minor + changes.summary.patch).toBeGreaterThan(0);
+      expect(
+        changes.summary.major + changes.summary.minor + changes.summary.patch
+      ).toBeGreaterThan(0);
     });
   });
 
@@ -239,13 +241,16 @@ describe('SwaggerChangeDetector', () => {
                   description: 'Success',
                   content: {
                     'application/json': {
-                      schema: { type: 'array', items: { $ref: '#/components/schemas/User' } }
-                    }
-                  }
-                }
-              }
-            }
-          }
+                      schema: {
+                        type: 'array',
+                        items: { $ref: '#/components/schemas/User' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
         components: {
           schemas: {
@@ -253,11 +258,11 @@ describe('SwaggerChangeDetector', () => {
               type: 'object',
               properties: {
                 id: { type: 'integer' },
-                name: { type: 'string' }
-              }
-            }
-          }
-        }
+                name: { type: 'string' },
+              },
+            },
+          },
+        },
       };
 
       const result = changeDetector.hasSignificantChanges(openApiSpec);
@@ -268,43 +273,16 @@ describe('SwaggerChangeDetector', () => {
       const originalSpec = {
         openapi: '3.0.0',
         info: { version: '1.0.0', title: 'API' },
-        paths: { 
-          '/users': { 
+        paths: {
+          '/users': {
             get: {
               operationId: 'getUsers',
               summary: 'Get users',
               responses: {
-                '200': { description: 'Success' }
-              }
-            } 
-          } 
-        },
-        components: {
-          schemas: {
-            User: {
-              type: 'object',
-              properties: {
-                id: { type: 'integer' },
-                name: { type: 'string' }
-              }
-            }
-          }
-        }
-      };
-
-      const updatedSpec = {
-        openapi: '3.0.0',
-        info: { version: '1.0.0', title: 'API' },
-        paths: { 
-          '/users': { 
-            get: {
-              operationId: 'getUsers',
-              summary: 'Get users',
-              responses: {
-                '200': { description: 'Success' }
-              }
-            } 
-          } 
+                '200': { description: 'Success' },
+              },
+            },
+          },
         },
         components: {
           schemas: {
@@ -313,16 +291,43 @@ describe('SwaggerChangeDetector', () => {
               properties: {
                 id: { type: 'integer' },
                 name: { type: 'string' },
-                email: { type: 'string' } // New property
-              }
-            }
-          }
-        }
+              },
+            },
+          },
+        },
+      };
+
+      const updatedSpec = {
+        openapi: '3.0.0',
+        info: { version: '1.0.0', title: 'API' },
+        paths: {
+          '/users': {
+            get: {
+              operationId: 'getUsers',
+              summary: 'Get users',
+              responses: {
+                '200': { description: 'Success' },
+              },
+            },
+          },
+        },
+        components: {
+          schemas: {
+            User: {
+              type: 'object',
+              properties: {
+                id: { type: 'integer' },
+                name: { type: 'string' },
+                email: { type: 'string' }, // New property
+              },
+            },
+          },
+        },
       };
 
       // First check
       changeDetector.hasSignificantChanges(originalSpec);
-      
+
       // Second check should detect schema changes
       const hasChanged = changeDetector.hasSignificantChanges(updatedSpec);
       expect(hasChanged).toBe(true);
@@ -340,24 +345,24 @@ describe('SwaggerChangeDetector', () => {
               responses: {
                 '200': {
                   description: 'Success',
-                  schema: { 
-                    type: 'array', 
-                    items: { $ref: '#/definitions/User' } 
-                  }
-                }
-              }
-            }
-          }
+                  schema: {
+                    type: 'array',
+                    items: { $ref: '#/definitions/User' },
+                  },
+                },
+              },
+            },
+          },
         },
         definitions: {
           User: {
             type: 'object',
             properties: {
               id: { type: 'integer' },
-              name: { type: 'string' }
-            }
-          }
-        }
+              name: { type: 'string' },
+            },
+          },
+        },
       };
 
       const result = changeDetector.hasSignificantChanges(swaggerSpec);
@@ -368,10 +373,10 @@ describe('SwaggerChangeDetector', () => {
   describe('edge cases', () => {
     it('should handle empty specs', () => {
       const emptySpec = {};
-      
+
       const result = changeDetector.hasSignificantChanges(emptySpec);
       expect(result).toBe(true); // First time should be true
-      
+
       const secondResult = changeDetector.hasSignificantChanges(emptySpec);
       expect(secondResult).toBe(false); // No changes
     });
@@ -379,7 +384,7 @@ describe('SwaggerChangeDetector', () => {
     it('should handle null/undefined specs', () => {
       const result = changeDetector.hasSignificantChanges(null);
       expect(result).toBe(true); // First time should be true
-      
+
       const secondResult = changeDetector.hasSignificantChanges(null);
       expect(secondResult).toBe(false); // No changes
     });

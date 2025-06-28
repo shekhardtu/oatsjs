@@ -168,9 +168,9 @@ export class DevSyncEngine extends EventEmitter {
       console.log(chalk.yellow('⏳ Sync already in progress, skipping...'));
       return;
     }
-    
+
     this.syncLock = true;
-    
+
     try {
       const event: SyncEvent = {
         type: 'generation-started',
@@ -223,13 +223,21 @@ export class DevSyncEngine extends EventEmitter {
       if (this.syncRetries < this.MAX_SYNC_RETRIES) {
         this.syncRetries++;
         const retryDelay = Math.pow(2, this.syncRetries) * 1000;
-        console.log(chalk.yellow(`🔄 Retrying sync in ${retryDelay}ms (attempt ${this.syncRetries}/${this.MAX_SYNC_RETRIES})...`));
+        console.log(
+          chalk.yellow(
+            `🔄 Retrying sync in ${retryDelay}ms (attempt ${this.syncRetries}/${this.MAX_SYNC_RETRIES})...`
+          )
+        );
         setTimeout(() => {
           this.syncLock = false;
           this.performSync();
         }, retryDelay);
       } else {
-        console.error(chalk.red('❌ Max sync retries exceeded. Manual intervention required.'));
+        console.error(
+          chalk.red(
+            '❌ Max sync retries exceeded. Manual intervention required.'
+          )
+        );
         this.syncRetries = 0;
       }
     } finally {
@@ -273,7 +281,7 @@ export class DevSyncEngine extends EventEmitter {
       this.config.resolvedPaths.client,
       'swagger.json'
     );
-    
+
     try {
       const { copyFileSync } = await import('fs');
       copyFileSync(specPath, clientSwaggerPath);
@@ -333,12 +341,19 @@ export class DevSyncEngine extends EventEmitter {
           this.config.resolvedPaths.frontend!
         );
       }
-      
+
       // Touch a file in frontend to trigger HMR
       if (this.config.services.frontend) {
         try {
-          const touchFile = join(this.config.resolvedPaths.frontend!, 'src', '.oats-sync');
-          await this.runCommand(`touch ${touchFile}`, this.config.resolvedPaths.frontend!);
+          const touchFile = join(
+            this.config.resolvedPaths.frontend!,
+            'src',
+            '.oats-sync'
+          );
+          await this.runCommand(
+            `touch ${touchFile}`,
+            this.config.resolvedPaths.frontend!
+          );
           console.log(chalk.dim('Triggered frontend HMR'));
         } catch (err) {
           // Ignore errors, this is optional
@@ -356,10 +371,11 @@ export class DevSyncEngine extends EventEmitter {
     const { execa } = await import('execa');
 
     try {
+      const stdio = this.config.log?.quiet ? 'pipe' : 'inherit';
       await execa(command, {
         cwd,
         shell: true,
-        stdio: 'inherit',
+        stdio,
       });
     } catch (error) {
       throw new Error(`Command failed: ${command} - ${error}`);

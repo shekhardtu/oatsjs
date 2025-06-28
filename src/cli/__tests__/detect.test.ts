@@ -178,7 +178,10 @@ describe('Detect Command', () => {
   describe('detectProjectStructure', () => {
     it.skip('should detect monorepo structure', async () => {
       mockGlob.mockImplementation(async (pattern: string | string[]) => {
-        if (typeof pattern === 'string' && pattern.includes('**/package.json')) {
+        if (
+          typeof pattern === 'string' &&
+          pattern.includes('**/package.json')
+        ) {
           return [
             'packages/backend/package.json',
             'packages/client/package.json',
@@ -242,7 +245,7 @@ describe('Detect Command', () => {
         console.log('Client detection issue:', {
           backend: result.backend,
           client: result.client,
-          frontend: result.frontend
+          frontend: result.frontend,
         });
       }
       expect(result.client?.path).toBe('packages/client');
@@ -254,7 +257,10 @@ describe('Detect Command', () => {
         if (typeof pattern === 'string' && pattern === '../*') {
           return ['../backend', '../api-client', '../frontend'];
         }
-        if (typeof pattern === 'string' && pattern.includes('**/package.json')) {
+        if (
+          typeof pattern === 'string' &&
+          pattern.includes('**/package.json')
+        ) {
           return [];
         }
         return [];
@@ -311,17 +317,19 @@ describe('Detect Command', () => {
 
       mockFs.existsSync.mockImplementation((path) => {
         const pathStr = path.toString();
-        return pathStr.includes('package.json') || pathStr.includes('swagger.json');
+        return (
+          pathStr.includes('package.json') || pathStr.includes('swagger.json')
+        );
       });
       mockFs.readFileSync.mockImplementation((path) => {
         const pathStr = path.toString();
         if (pathStr.includes('backend/package.json')) {
           return JSON.stringify({
-            dependencies: { 
-              express: '^4.18.0', 
+            dependencies: {
+              express: '^4.18.0',
               fastify: '^4.0.0',
               tsoa: '^5.0.0',
-              'swagger-jsdoc': '^6.0.0'
+              'swagger-jsdoc': '^6.0.0',
             },
             scripts: { dev: 'nodemon app.ts' },
           });
@@ -329,8 +337,8 @@ describe('Detect Command', () => {
         if (pathStr.includes('client/package.json')) {
           return JSON.stringify({
             name: '@test/client',
-            dependencies: { 
-              '@hey-api/openapi-ts': '^0.27.0'
+            dependencies: {
+              '@hey-api/openapi-ts': '^0.27.0',
             },
             scripts: { generate: 'openapi-ts' },
           });
@@ -350,7 +358,7 @@ describe('Detect Command', () => {
       mockFs.existsSync.mockReturnValue(false);
 
       const result = await detectProjectStructure(process.cwd());
-      
+
       expect(result.backend).toBeUndefined();
       expect(result.client).toBeUndefined();
       expect(result.monorepo).toBe(false);

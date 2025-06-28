@@ -78,7 +78,7 @@ jest.mock('chokidar', () => ({
   })),
 }));
 
-jest.mock('ora', () => 
+jest.mock('ora', () =>
   jest.fn(() => ({
     start: jest.fn().mockReturnThis(),
     stop: jest.fn().mockReturnThis(),

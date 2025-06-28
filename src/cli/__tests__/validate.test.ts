@@ -28,7 +28,9 @@ const mockFs = {
 const mockOra = ora as jest.MockedFunction<typeof ora>;
 
 import { validateConfig } from '../../config/schema';
-const mockValidateConfig = validateConfig as jest.MockedFunction<typeof validateConfig>;
+const mockValidateConfig = validateConfig as jest.MockedFunction<
+  typeof validateConfig
+>;
 
 describe('Validate Command', () => {
   let mockSpinner: any;
@@ -121,7 +123,7 @@ describe('Validate Command', () => {
       };
 
       mockFs.readFileSync.mockReturnValue(JSON.stringify(validConfig));
-      
+
       // Mock path existence checks
       mockFs.existsSync.mockImplementation((path) => {
         const pathStr = path.toString();
@@ -175,8 +177,18 @@ describe('Validate Command', () => {
         valid: true,
         errors: [],
         warnings: [
-          { code: 'low-debounce', path: 'sync.debounceMs', message: 'Low debounce value may cause excessive API regeneration', suggestion: 'Consider using at least 500ms' },
-          { code: 'aggressive-sync', path: 'sync.strategy', message: 'Aggressive sync strategy may impact performance', suggestion: 'Use conservative strategy for better stability' },
+          {
+            code: 'low-debounce',
+            path: 'sync.debounceMs',
+            message: 'Low debounce value may cause excessive API regeneration',
+            suggestion: 'Consider using at least 500ms',
+          },
+          {
+            code: 'aggressive-sync',
+            path: 'sync.strategy',
+            message: 'Aggressive sync strategy may impact performance',
+            suggestion: 'Use conservative strategy for better stability',
+          },
         ],
       });
 
@@ -210,10 +222,26 @@ describe('Validate Command', () => {
       mockValidateConfig.mockReturnValue({
         valid: false,
         errors: [
-          { code: 'required', path: 'services.backend.startCommand', message: 'Start command is required' },
-          { code: 'required', path: 'services.backend.apiSpec', message: 'API spec is required' },
-          { code: 'required', path: 'services.client.packageName', message: 'Package name is required' },
-          { code: 'required', path: 'services.client.generator', message: 'Generator is required' },
+          {
+            code: 'required',
+            path: 'services.backend.startCommand',
+            message: 'Start command is required',
+          },
+          {
+            code: 'required',
+            path: 'services.backend.apiSpec',
+            message: 'API spec is required',
+          },
+          {
+            code: 'required',
+            path: 'services.client.packageName',
+            message: 'Package name is required',
+          },
+          {
+            code: 'required',
+            path: 'services.client.generator',
+            message: 'Generator is required',
+          },
         ],
         warnings: [],
       });
@@ -243,8 +271,10 @@ describe('Validate Command', () => {
         },
       };
 
-      mockFs.readFileSync.mockReturnValue(JSON.stringify(configWithInvalidPaths));
-      
+      mockFs.readFileSync.mockReturnValue(
+        JSON.stringify(configWithInvalidPaths)
+      );
+
       // Mock path existence - only config file exists
       mockFs.existsSync.mockImplementation((path) => {
         return path.toString().includes('oats.config.json');

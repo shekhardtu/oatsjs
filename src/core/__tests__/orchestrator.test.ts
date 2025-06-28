@@ -21,7 +21,7 @@ jest.mock('../dev-sync-optimized', () => ({
 
 const mockExeca = execa as jest.MockedFunction<typeof execa>;
 import detectPort from 'detect-port';
-const mockDetectPort = detectPort as jest.MockedFunction<typeof detectPort>;
+const mockDetectPort = detectPort;
 
 describe('DevSyncOrchestrator', () => {
   let orchestrator: DevSyncOrchestrator;
@@ -56,15 +56,15 @@ describe('DevSyncOrchestrator', () => {
 
   beforeEach(() => {
     orchestrator = new DevSyncOrchestrator(defaultConfig as any);
-    
+
     mockProcess = new EventEmitter();
     mockProcess.stdout = new EventEmitter();
     mockProcess.stderr = new EventEmitter();
     mockProcess.kill = jest.fn();
     mockProcess.killed = false;
-    
-    mockExeca.mockReturnValue(mockProcess as any);
-    
+
+    mockExeca.mockReturnValue(mockProcess);
+
     // Mock detect-port to return available ports by default
     mockDetectPort.mockImplementation(async (port: number) => port);
   });
@@ -85,10 +85,10 @@ describe('DevSyncOrchestrator', () => {
       });
 
       const startPromise = orchestrator.start();
-      
+
       // Wait for initial port check and service start
       await new Promise((resolve) => setTimeout(resolve, 100));
-      
+
       expect(mockExeca).toHaveBeenCalledWith(
         'npm run dev',
         expect.objectContaining({
@@ -99,7 +99,7 @@ describe('DevSyncOrchestrator', () => {
           localDir: '/test/backend',
         })
       );
-      
+
       // Wait for port detection interval to fire
       await new Promise((resolve) => setTimeout(resolve, 600));
 
@@ -132,7 +132,7 @@ describe('DevSyncOrchestrator', () => {
         resolvedPaths: defaultConfig.resolvedPaths,
         sync: defaultConfig.sync,
       };
-      
+
       orchestrator = new DevSyncOrchestrator(configWithEnv as any);
 
       // Mock port detection
@@ -142,9 +142,9 @@ describe('DevSyncOrchestrator', () => {
         }
         return port + 1;
       });
-      
+
       const startPromise = orchestrator.start();
-      
+
       // Wait for port detection
       await new Promise((resolve) => setTimeout(resolve, 600));
 
@@ -158,7 +158,7 @@ describe('DevSyncOrchestrator', () => {
           }),
         })
       );
-      
+
       await startPromise;
     }, 10000);
   });
@@ -172,13 +172,13 @@ describe('DevSyncOrchestrator', () => {
         }
         return port + 1;
       });
-      
+
       // Start services first
       const startPromise = orchestrator.start();
-      
+
       // Wait for port detection
       await new Promise((resolve) => setTimeout(resolve, 600));
-      
+
       await startPromise;
 
       // Mock the process exit when kill is called
@@ -207,12 +207,12 @@ describe('DevSyncOrchestrator', () => {
         }
         return port + 1;
       });
-      
+
       const startPromise = orchestrator.start();
-      
+
       // Wait for port detection
       await new Promise((resolve) => setTimeout(resolve, 600));
-      
+
       await startPromise;
 
       const statuses = orchestrator.getStatus();
@@ -235,12 +235,12 @@ describe('DevSyncOrchestrator', () => {
         }
         return port + 1;
       });
-      
+
       const startPromise = orchestrator.start();
-      
+
       // Wait for port detection
       await new Promise((resolve) => setTimeout(resolve, 600));
-      
+
       await startPromise;
 
       expect(eventSpy).toHaveBeenCalled();
@@ -258,24 +258,26 @@ describe('DevSyncOrchestrator', () => {
         }
         return port + 1;
       });
-      
+
       const startPromise = orchestrator.start();
-      
+
       // Wait for port detection and service to be marked as ready
       await new Promise((resolve) => setTimeout(resolve, 600));
-      
+
       await startPromise;
 
       // Then simulate crash
       mockProcess.emit('exit', 1);
 
       // Wait for event to be emitted
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(errorSpy).toHaveBeenCalledWith(expect.objectContaining({
-        name: 'backend',
-        error: expect.any(Error)
-      }));
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'backend',
+          error: expect.any(Error),
+        })
+      );
     }, 10000);
   });
 });
