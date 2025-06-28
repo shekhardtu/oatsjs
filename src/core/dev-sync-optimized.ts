@@ -1,24 +1,31 @@
 /**
  * OATS Development Sync Engine
- * 
+ *
  * Optimized file watching and synchronization system
- * 
+ *
  * @module @oatsjs/core/dev-sync-optimized
  */
 
 import { EventEmitter } from 'events';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
-import chokidar from 'chokidar';
-import debounce from 'lodash.debounce';
-import chalk from 'chalk';
 
-import type { RuntimeConfig } from '../types/config.types.js';
-import { SwaggerChangeDetector } from './swagger-diff.js';
+import chalk from 'chalk';
+import { watch } from 'chokidar';
+import debounce from 'lodash.debounce';
+
 import { ApiSpecError, GeneratorError } from '../errors/index.js';
 
+import { SwaggerChangeDetector } from './swagger-diff.js';
+
+import type { RuntimeConfig } from '../types/config.types.js';
+
 export interface SyncEvent {
-  type: 'spec-changed' | 'generation-started' | 'generation-completed' | 'generation-failed';
+  type:
+    | 'spec-changed'
+    | 'generation-started'
+    | 'generation-completed'
+    | 'generation-failed';
   timestamp: Date;
   file?: string;
   changes?: string[];
@@ -40,7 +47,7 @@ export class DevSyncEngine extends EventEmitter {
     super();
     this.config = config;
     this.changeDetector = new SwaggerChangeDetector();
-    
+
     // Setup debounced sync function
     this.debouncedSync = debounce(
       this.performSync.bind(this),
@@ -58,9 +65,12 @@ export class DevSyncEngine extends EventEmitter {
 
     try {
       const watchPaths = this.getWatchPaths();
-      const ignored = this.config.sync.ignore || ['**/node_modules/**', '**/.git/**'];
+      const ignored = this.config.sync.ignore || [
+        '**/node_modules/**',
+        '**/.git/**',
+      ];
 
-      this.watcher = chokidar.watch(watchPaths, {
+      this.watcher = watch(watchPaths, {
         ignored,
         persistent: true,
         ignoreInitial: false,
@@ -131,7 +141,9 @@ export class DevSyncEngine extends EventEmitter {
 
     // Check if this is an API spec file or related file
     if (this.isRelevantFile(filePath)) {
-      console.log(chalk.blue('🔄 API-related file changed, scheduling sync...'));
+      console.log(
+        chalk.blue('🔄 API-related file changed, scheduling sync...')
+      );
       this.debouncedSync();
     }
   }
@@ -185,7 +197,6 @@ export class DevSyncEngine extends EventEmitter {
         timestamp: new Date(),
       };
       this.emit('sync-event', completedEvent);
-
     } catch (error) {
       console.error(chalk.red('❌ Synchronization failed:'), error);
 
@@ -217,10 +228,7 @@ export class DevSyncEngine extends EventEmitter {
       const currentSpec = JSON.parse(readFileSync(specPath, 'utf-8'));
       return this.changeDetector.hasSignificantChanges(currentSpec);
     } catch (error) {
-      throw new ApiSpecError(
-        `Failed to parse API spec: ${error}`,
-        specPath
-      );
+      throw new ApiSpecError(`Failed to parse API spec: ${error}`, specPath);
     }
   }
 
@@ -272,11 +280,14 @@ export class DevSyncEngine extends EventEmitter {
 
       // Link in frontend if configured
       if (this.config.services.frontend) {
-        const frontendLinkCommand = 
+        const frontendLinkCommand =
           this.config.services.frontend.packageLinkCommand ||
           `${this.config.packageManager} link ${this.config.services.client.packageName}`;
-        
-        await this.runCommand(frontendLinkCommand, this.config.resolvedPaths.frontend!);
+
+        await this.runCommand(
+          frontendLinkCommand,
+          this.config.resolvedPaths.frontend!
+        );
       }
     }
 
@@ -288,7 +299,7 @@ export class DevSyncEngine extends EventEmitter {
    */
   private async runCommand(command: string, cwd: string): Promise<void> {
     const { execa } = await import('execa');
-    
+
     try {
       await execa(command, {
         cwd,
@@ -328,11 +339,12 @@ export class DevSyncEngine extends EventEmitter {
    */
   private isRelevantFile(filePath: string): boolean {
     const watchPaths = this.getWatchPaths();
-    return watchPaths.some(path => 
-      filePath.includes(path) || 
-      filePath.endsWith('.json') || 
-      filePath.endsWith('.yaml') || 
-      filePath.endsWith('.yml')
+    return watchPaths.some(
+      (path) =>
+        filePath.includes(path) ||
+        filePath.endsWith('.json') ||
+        filePath.endsWith('.yaml') ||
+        filePath.endsWith('.yml')
     );
   }
 }

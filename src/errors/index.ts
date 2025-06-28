@@ -1,9 +1,9 @@
 /**
  * Custom Error Classes for OATS
- * 
+ *
  * This module defines a hierarchy of error classes for better error handling
  * and user-friendly error messages throughout the application.
- * 
+ *
  * @module @oatsjs/errors
  */
 

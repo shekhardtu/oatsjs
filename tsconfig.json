@@ -4,7 +4,7 @@
     "target": "ES2022",
     "module": "ESNext",
     "lib": ["ES2022"],
-    
+
     // Module Resolution
     "moduleResolution": "node",
     "baseUrl": "./",
@@ -16,11 +16,11 @@
       "@utils/*": ["src/utils/*"],
       "@config/*": ["src/config/*"]
     },
-    
+
     // JavaScript Support
     "allowJs": true,
     "checkJs": true,
-    
+
     // Emit
     "declaration": true,
     "declarationMap": true,
@@ -28,7 +28,7 @@
     "outDir": "./dist",
     "removeComments": false,
     "preserveConstEnums": true,
-    
+
     // Type Checking
     "strict": true,
     "noImplicitAny": true,
@@ -46,16 +46,16 @@
     "noPropertyAccessFromIndexSignature": true,
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
-    
+
     // Interop Constraints
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-    
+
     // Experimental
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    
+
     // Advanced
     "skipLibCheck": true,
     "resolveJsonModule": true
@@ -69,7 +69,9 @@
     "dist",
     "coverage",
     "**/*.test.ts",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "src/**/__tests__/**/*",
+    "src/**/*.test.ts"
   ],
   "ts-node": {
     "esm": true,

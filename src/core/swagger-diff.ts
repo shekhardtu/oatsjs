@@ -1,8 +1,8 @@
 /**
  * OATS Swagger/OpenAPI Change Detection
- * 
+ *
  * Intelligent detection of meaningful changes in API specifications
- * 
+ *
  * @module @oatsjs/core/swagger-diff
  */
 
@@ -37,7 +37,7 @@ export class SwaggerChangeDetector {
    */
   hasSignificantChanges(currentSpec: any): boolean {
     const currentState = this.calculateSpecHash(currentSpec);
-    
+
     if (this.lastState === null) {
       // First time, consider it a change
       this.lastState = currentState;
@@ -52,7 +52,7 @@ export class SwaggerChangeDetector {
 
     // Analyze the actual changes
     const changes = this.detectChanges(this.lastSpec, currentSpec);
-    
+
     // Update state
     this.lastState = currentState;
     this.lastSpec = currentSpec;
@@ -66,11 +66,11 @@ export class SwaggerChangeDetector {
    */
   analyzeChanges(previousSpec: any, currentSpec: any): ChangeDetectionResult {
     const changes = this.detectChanges(previousSpec, currentSpec);
-    
+
     const summary = {
-      major: changes.filter(c => c.severity === 'major').length,
-      minor: changes.filter(c => c.severity === 'minor').length,
-      patch: changes.filter(c => c.severity === 'patch').length,
+      major: changes.filter((c) => c.severity === 'major').length,
+      minor: changes.filter((c) => c.severity === 'minor').length,
+      patch: changes.filter((c) => c.severity === 'patch').length,
     };
 
     return {
@@ -86,7 +86,10 @@ export class SwaggerChangeDetector {
   private calculateSpecHash(spec: any): string {
     // Extract only the meaningful parts for hashing
     const relevantSpec = this.extractRelevantParts(spec);
-    const serialized = JSON.stringify(relevantSpec, Object.keys(relevantSpec).sort());
+    const serialized = JSON.stringify(
+      relevantSpec,
+      Object.keys(relevantSpec).sort()
+    );
     return crypto.createHash('sha256').update(serialized).digest('hex');
   }
 
@@ -134,7 +137,7 @@ export class SwaggerChangeDetector {
 
     for (const [path, pathItem] of Object.entries(paths)) {
       normalized[path] = {};
-      
+
       for (const [method, operation] of Object.entries(pathItem as any)) {
         if (typeof operation === 'object' && operation !== null) {
           const op = operation as any;
@@ -164,23 +167,27 @@ export class SwaggerChangeDetector {
     }
 
     // Compare paths
-    changes.push(...this.compareObjects(
-      oldSpec.paths || {},
-      newSpec.paths || {},
-      'paths',
-      this.classifyPathChange.bind(this)
-    ));
+    changes.push(
+      ...this.compareObjects(
+        oldSpec.paths || {},
+        newSpec.paths || {},
+        'paths',
+        this.classifyPathChange.bind(this)
+      )
+    );
 
     // Compare schemas
     const oldSchemas = oldSpec.components?.schemas || oldSpec.definitions || {};
     const newSchemas = newSpec.components?.schemas || newSpec.definitions || {};
-    
-    changes.push(...this.compareObjects(
-      oldSchemas,
-      newSchemas,
-      'schemas',
-      this.classifySchemaChange.bind(this)
-    ));
+
+    changes.push(
+      ...this.compareObjects(
+        oldSchemas,
+        newSchemas,
+        'schemas',
+        this.classifySchemaChange.bind(this)
+      )
+    );
 
     return changes;
   }
@@ -192,7 +199,10 @@ export class SwaggerChangeDetector {
     oldObj: any,
     newObj: any,
     basePath: string,
-    classifier: (changeType: string, path: string) => { description: string; severity: ApiChange['severity'] }
+    classifier: (
+      changeType: string,
+      path: string
+    ) => { description: string; severity: ApiChange['severity'] }
   ): ApiChange[] {
     const changes: ApiChange[] = [];
     const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
@@ -290,8 +300,8 @@ export class SwaggerChangeDetector {
    */
   private areChangesSignificant(changes: ApiChange[]): boolean {
     // Any major or minor changes are significant
-    return changes.some(change => 
-      change.severity === 'major' || change.severity === 'minor'
+    return changes.some(
+      (change) => change.severity === 'major' || change.severity === 'minor'
     );
   }
 

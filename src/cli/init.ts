@@ -1,8 +1,8 @@
 /**
  * OATS Init Command
- * 
+ *
  * Interactive initialization of OATS configuration
- * 
+ *
  * @module @oatsjs/cli/init
  */
 
@@ -13,9 +13,11 @@ import chalk from 'chalk';
 import inquirer from 'inquirer';
 import ora from 'ora';
 
-import type { OatsConfig } from '../types/config.types.js';
 import { validateConfig } from '../config/schema.js';
+
 import { detectProjectStructure } from './detect.js';
+
+import type { OatsConfig } from '../types/config.types.js';
 
 interface InitOptions {
   force?: boolean;
@@ -67,7 +69,9 @@ const PROJECT_TEMPLATES = {
  */
 export async function init(options: InitOptions): Promise<void> {
   console.log(chalk.yellow('\n🌾 Welcome to OATSJS!\n'));
-  console.log(chalk.dim('Let\'s set up your OpenAPI TypeScript sync configuration.\n'));
+  console.log(
+    chalk.dim("Let's set up your OpenAPI TypeScript sync configuration.\n")
+  );
 
   const configPath = join(process.cwd(), 'oats.config.json');
 
@@ -133,21 +137,26 @@ export async function init(options: InitOptions): Promise<void> {
     writeFileSync(configPath, configContent);
     writeSpinner.succeed('Configuration created!');
 
-    console.log('\n' + chalk.green('✅ OATSJS initialized successfully!'));
-    console.log('\n' + chalk.bold('Configuration saved to:'), chalk.cyan(configPath));
-    
-    console.log('\n' + chalk.bold('Next steps:'));
+    console.log(`\n${chalk.green('✅ OATSJS initialized successfully!')}`);
+    console.log(
+      `\n${chalk.bold('Configuration saved to:')}`,
+      chalk.cyan(configPath)
+    );
+
+    console.log(`\n${chalk.bold('Next steps:')}`);
     console.log(chalk.cyan('  1. Review your configuration:'));
     console.log(chalk.dim(`     cat ${configPath}`));
     console.log(chalk.cyan('  2. Start watching and syncing:'));
     console.log(chalk.dim('     oatsjs start'));
     console.log(chalk.cyan('  3. Or run with initial generation:'));
     console.log(chalk.dim('     oatsjs start --init-gen'));
-    
-    console.log('\n' + chalk.dim('For more help: oatsjs --help'));
+
+    console.log(`\n${chalk.dim('For more help: oatsjs --help')}`);
   } catch (error) {
     writeSpinner.fail('Failed to create configuration');
-    console.error(chalk.red(error instanceof Error ? error.message : String(error)));
+    console.error(
+      chalk.red(error instanceof Error ? error.message : String(error))
+    );
     process.exit(1);
   }
 }
@@ -158,18 +167,21 @@ export async function init(options: InitOptions): Promise<void> {
 async function createDefaultConfig(): Promise<OatsConfig> {
   // Try to detect project structure
   const detectionSpinner = ora('Detecting project structure...').start();
-  
+
   try {
     const detected = await detectProjectStructure(process.cwd());
     detectionSpinner.succeed('Project structure detected');
-    
+
     // Convert detected structure to config
     return {
       services: {
         backend: {
           path: detected.backend?.path || './backend',
           port: 4000,
-          startCommand: detected.backend?.packageManager === 'yarn' ? 'yarn dev' : 'npm run dev',
+          startCommand:
+            detected.backend?.packageManager === 'yarn'
+              ? 'yarn dev'
+              : 'npm run dev',
           apiSpec: {
             path: detected.backend?.apiSpec || 'src/swagger.json',
           },
@@ -178,21 +190,38 @@ async function createDefaultConfig(): Promise<OatsConfig> {
           path: detected.client?.path || './api-client',
           packageName: '@myorg/api-client',
           generator: 'custom',
-          generateCommand: detected.client?.packageManager === 'yarn' ? 'yarn generate' : 'npm run generate',
-          buildCommand: detected.client?.packageManager === 'yarn' ? 'yarn build' : 'npm run build',
-          linkCommand: detected.client?.packageManager === 'yarn' ? 'yarn link' : 'npm link',
+          generateCommand:
+            detected.client?.packageManager === 'yarn'
+              ? 'yarn generate'
+              : 'npm run generate',
+          buildCommand:
+            detected.client?.packageManager === 'yarn'
+              ? 'yarn build'
+              : 'npm run build',
+          linkCommand:
+            detected.client?.packageManager === 'yarn'
+              ? 'yarn link'
+              : 'npm link',
         },
-        frontend: detected.frontend ? {
-          path: detected.frontend.path,
-          port: 3000,
-          startCommand: detected.frontend.packageManager === 'yarn' ? 'yarn dev' : 'npm run dev',
-          packageLinkCommand: detected.frontend.packageManager === 'yarn' ? 'yarn link' : 'npm link',
-        } : undefined,
+        frontend: detected.frontend
+          ? {
+              path: detected.frontend.path,
+              port: 3000,
+              startCommand:
+                detected.frontend.packageManager === 'yarn'
+                  ? 'yarn dev'
+                  : 'npm run dev',
+              packageLinkCommand:
+                detected.frontend.packageManager === 'yarn'
+                  ? 'yarn link'
+                  : 'npm link',
+            }
+          : undefined,
       },
     };
   } catch {
     detectionSpinner.warn('Could not detect project structure, using defaults');
-    
+
     // Fallback to basic defaults
     return {
       services: {
@@ -221,13 +250,13 @@ async function createDefaultConfig(): Promise<OatsConfig> {
  * Interactive setup
  */
 async function interactiveSetup(): Promise<OatsConfig> {
-  console.log(chalk.bold('Let\'s configure your services:\n'));
+  console.log(chalk.bold("Let's configure your services:\n"));
 
   const answers = await inquirer.prompt<ProjectAnswers>([
     {
       type: 'list',
       name: 'projectType',
-      message: 'What\'s your project structure?',
+      message: "What's your project structure?",
       choices: Object.entries(PROJECT_TEMPLATES).map(([key, value]) => ({
         name: value.name,
         value: key,
@@ -237,8 +266,10 @@ async function interactiveSetup(): Promise<OatsConfig> {
       type: 'input',
       name: 'backendPath',
       message: 'Backend path:',
-      default: (answers: ProjectAnswers) => PROJECT_TEMPLATES[answers.projectType].backend,
-      validate: (input: string) => input.length > 0 || 'Backend path is required',
+      default: (answers: ProjectAnswers) =>
+        PROJECT_TEMPLATES[answers.projectType].backend,
+      validate: (input: string) =>
+        input.length > 0 || 'Backend path is required',
     },
     {
       type: 'number',
@@ -263,14 +294,17 @@ async function interactiveSetup(): Promise<OatsConfig> {
       name: 'apiSpecPath',
       message: 'API spec path (relative to backend):',
       default: 'src/swagger.json',
-      validate: (input: string) => input.length > 0 || 'API spec path is required',
+      validate: (input: string) =>
+        input.length > 0 || 'API spec path is required',
     },
     {
       type: 'input',
       name: 'clientPath',
       message: 'Client path:',
-      default: (answers: ProjectAnswers) => PROJECT_TEMPLATES[answers.projectType].client,
-      validate: (input: string) => input.length > 0 || 'Client path is required',
+      default: (answers: ProjectAnswers) =>
+        PROJECT_TEMPLATES[answers.projectType].client,
+      validate: (input: string) =>
+        input.length > 0 || 'Client path is required',
     },
     {
       type: 'input',
@@ -278,7 +312,9 @@ async function interactiveSetup(): Promise<OatsConfig> {
       message: 'Client package name:',
       default: '@myorg/api-client',
       validate: (input: string) => {
-        if (!input.match(/^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/)) {
+        if (
+          !input.match(/^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/)
+        ) {
           return 'Invalid package name format';
         }
         return true;
@@ -313,7 +349,8 @@ async function interactiveSetup(): Promise<OatsConfig> {
       type: 'input',
       name: 'frontendPath',
       message: 'Frontend path:',
-      default: (answers: ProjectAnswers) => PROJECT_TEMPLATES[answers.projectType].frontend,
+      default: (answers: ProjectAnswers) =>
+        PROJECT_TEMPLATES[answers.projectType].frontend,
       when: (answers: ProjectAnswers) => answers.includeFrontend,
     },
     {
@@ -350,9 +387,15 @@ async function interactiveSetup(): Promise<OatsConfig> {
       name: 'syncStrategy',
       message: 'Sync strategy:',
       choices: [
-        { name: 'Smart (recommended) - Only sync on meaningful changes', value: 'smart' },
+        {
+          name: 'Smart (recommended) - Only sync on meaningful changes',
+          value: 'smart',
+        },
         { name: 'Aggressive - Sync on any change', value: 'aggressive' },
-        { name: 'Conservative - Only sync on major changes', value: 'conservative' },
+        {
+          name: 'Conservative - Only sync on major changes',
+          value: 'conservative',
+        },
       ],
       default: 'smart',
     },
@@ -373,7 +416,8 @@ async function interactiveSetup(): Promise<OatsConfig> {
         path: answers.clientPath,
         packageName: answers.clientPackageName,
         generator: answers.clientGenerator as any,
-        generateCommand: answers.clientGenerator === 'custom' ? 'npm run generate' : undefined,
+        generateCommand:
+          answers.clientGenerator === 'custom' ? 'npm run generate' : undefined,
         buildCommand: answers.clientBuildCommand || 'npm run build',
         linkCommand: 'npm link',
       },

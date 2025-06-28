@@ -1,8 +1,8 @@
 /**
  * OATS Validate Command
- * 
+ *
  * Validates OATS configuration files
- * 
+ *
  * @module @oatsjs/cli/validate
  */
 
@@ -13,6 +13,7 @@ import chalk from 'chalk';
 
 import { validateConfig } from '../config/schema.js';
 import { ConfigError } from '../errors/index.js';
+
 import type { OatsConfig } from '../types/config.types.js';
 
 interface ValidateOptions {
@@ -66,14 +67,16 @@ export async function validate(options: ValidateOptions): Promise<void> {
       validation.errors.forEach((error) => {
         console.error(chalk.red(`  • ${error.path}: ${error.message}`));
         if (error.value !== undefined) {
-          console.error(chalk.dim(`    Current value: ${JSON.stringify(error.value)}`));
+          console.error(
+            chalk.dim(`    Current value: ${JSON.stringify(error.value)}`)
+          );
         }
       });
-      
+
       if (!options.strict) {
         console.log(chalk.dim('\nRun with --strict for additional checks'));
       }
-      
+
       process.exit(1);
     }
 
@@ -109,22 +112,27 @@ export async function validate(options: ValidateOptions): Promise<void> {
     displayDependencyChecks(depChecks);
 
     // Final summary
-    const hasErrors = pathChecks.some(p => p.required && !p.exists) || 
-                     (options.strict && strictResults.some((r: any) => !r.passed));
+    const hasErrors =
+      pathChecks.some((p) => p.required && !p.exists) ||
+      (options.strict && strictResults.some((r: any) => !r.passed));
 
     if (hasErrors) {
       console.log(chalk.red('\n❌ Validation completed with errors'));
       process.exit(1);
-    } else if (validation.warnings.length > 0 || pathChecks.some(p => !p.exists)) {
+    } else if (
+      validation.warnings.length > 0 ||
+      pathChecks.some((p) => !p.exists)
+    ) {
       console.log(chalk.yellow('\n⚠️  Validation completed with warnings'));
     } else {
       console.log(chalk.green('\n✅ Configuration is fully valid!'));
       console.log(chalk.dim('\nYou can now run: oatsjs start'));
     }
-
   } catch (error) {
     console.error(chalk.red('❌ Failed to validate configuration:'));
-    console.error(chalk.red(error instanceof Error ? error.message : String(error)));
+    console.error(
+      chalk.red(error instanceof Error ? error.message : String(error))
+    );
     process.exit(1);
   }
 }
@@ -146,10 +154,16 @@ async function checkPaths(config: OatsConfig): Promise<PathCheck[]> {
   });
 
   // API spec path
-  const apiSpecPath = resolve(backendPath, config.services.backend.apiSpec.path);
+  const apiSpecPath = resolve(
+    backendPath,
+    config.services.backend.apiSpec.path
+  );
   checks.push({
     name: 'API Spec',
-    path: join(config.services.backend.path, config.services.backend.apiSpec.path),
+    path: join(
+      config.services.backend.path,
+      config.services.backend.apiSpec.path
+    ),
     required: false,
     exists: existsSync(apiSpecPath),
     absolutePath: apiSpecPath,
@@ -198,7 +212,9 @@ function displayPathChecks(checks: PathCheck[]): void {
 /**
  * Perform strict validation checks
  */
-async function performStrictChecks(config: OatsConfig): Promise<StrictCheckResult[]> {
+async function performStrictChecks(
+  config: OatsConfig
+): Promise<StrictCheckResult[]> {
   const results: StrictCheckResult[] = [];
 
   // Check package.json files exist
@@ -213,8 +229,8 @@ async function performStrictChecks(config: OatsConfig): Promise<StrictCheckResul
     results.push({
       check: `package.json in ${path}`,
       passed: existsSync(packageJsonPath),
-      message: existsSync(packageJsonPath) 
-        ? 'Found' 
+      message: existsSync(packageJsonPath)
+        ? 'Found'
         : 'Missing package.json - is this a Node.js project?',
     });
   }
@@ -225,12 +241,13 @@ async function performStrictChecks(config: OatsConfig): Promise<StrictCheckResul
     if (existsSync(packageJsonPath)) {
       try {
         const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-        const hasDevScript = packageJson.scripts?.dev || packageJson.scripts?.start;
+        const hasDevScript =
+          packageJson.scripts?.dev || packageJson.scripts?.start;
         results.push({
           check: `Dev script in ${path}`,
           passed: Boolean(hasDevScript),
-          message: hasDevScript 
-            ? 'Found dev/start script' 
+          message: hasDevScript
+            ? 'Found dev/start script'
             : 'No dev or start script found',
         });
       } catch {
@@ -245,19 +262,22 @@ async function performStrictChecks(config: OatsConfig): Promise<StrictCheckResul
 
   // Check client package name matches
   const clientPackageJsonPath = resolve(
-    process.cwd(), 
-    config.services.client.path, 
+    process.cwd(),
+    config.services.client.path,
     'package.json'
   );
   if (existsSync(clientPackageJsonPath)) {
     try {
-      const packageJson = JSON.parse(readFileSync(clientPackageJsonPath, 'utf-8'));
-      const nameMatches = packageJson.name === config.services.client.packageName;
+      const packageJson = JSON.parse(
+        readFileSync(clientPackageJsonPath, 'utf-8')
+      );
+      const nameMatches =
+        packageJson.name === config.services.client.packageName;
       results.push({
         check: 'Client package name',
         passed: nameMatches,
-        message: nameMatches 
-          ? 'Package name matches configuration' 
+        message: nameMatches
+          ? 'Package name matches configuration'
           : `Package name mismatch: ${packageJson.name} !== ${config.services.client.packageName}`,
       });
     } catch {
@@ -288,20 +308,25 @@ function displayStrictResults(results: StrictCheckResult[]): void {
 /**
  * Check dependencies
  */
-async function checkDependencies(config: OatsConfig): Promise<DependencyCheck[]> {
+async function checkDependencies(
+  config: OatsConfig
+): Promise<DependencyCheck[]> {
   const checks: DependencyCheck[] = [];
 
   // Check if generator is installed (for non-custom generators)
   if (config.services.client.generator !== 'custom') {
     const clientPath = resolve(process.cwd(), config.services.client.path);
     const packageJsonPath = resolve(clientPath, 'package.json');
-    
+
     if (existsSync(packageJsonPath)) {
       try {
         const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-        const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
+        const deps = {
+          ...packageJson.dependencies,
+          ...packageJson.devDependencies,
+        };
         const hasGenerator = config.services.client.generator in deps;
-        
+
         checks.push({
           name: config.services.client.generator,
           type: 'generator',

@@ -3,6 +3,7 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'fs';
+
 import { glob } from 'glob';
 import ora from 'ora';
 
@@ -98,7 +99,9 @@ describe('Detect Command', () => {
 
       await detect({ output: 'oats.config.json' });
 
-      expect(mockSpinner.succeed).toHaveBeenCalledWith('Project structure detected!');
+      expect(mockSpinner.succeed).toHaveBeenCalledWith(
+        'Project structure detected!'
+      );
       expect(mockFs.writeFileSync).toHaveBeenCalledWith(
         expect.stringContaining('oats.config.json'),
         expect.stringContaining('"path": "../backend"')
@@ -170,7 +173,7 @@ describe('Detect Command', () => {
   describe('detectProjectStructure', () => {
     describe('monorepo detection', () => {
       it('should detect Lerna monorepo', async () => {
-        mockFs.existsSync.mockImplementation((path) => 
+        mockFs.existsSync.mockImplementation((path) =>
           path.includes('lerna.json')
         );
 
@@ -179,7 +182,7 @@ describe('Detect Command', () => {
       });
 
       it('should detect Nx monorepo', async () => {
-        mockFs.existsSync.mockImplementation((path) => 
+        mockFs.existsSync.mockImplementation((path) =>
           path.includes('nx.json')
         );
 
@@ -188,7 +191,7 @@ describe('Detect Command', () => {
       });
 
       it('should detect pnpm workspace', async () => {
-        mockFs.existsSync.mockImplementation((path) => 
+        mockFs.existsSync.mockImplementation((path) =>
           path.includes('pnpm-workspace.yaml')
         );
 
@@ -197,7 +200,7 @@ describe('Detect Command', () => {
       });
 
       it('should detect yarn workspaces', async () => {
-        mockFs.existsSync.mockImplementation((path) => 
+        mockFs.existsSync.mockImplementation((path) =>
           path.includes('package.json')
         );
         mockFs.readFileSync.mockReturnValue(
@@ -221,7 +224,7 @@ describe('Detect Command', () => {
 
       frameworks.forEach(({ dep, name }) => {
         it(`should detect ${name} backend`, async () => {
-          mockFs.existsSync.mockImplementation((path) => 
+          mockFs.existsSync.mockImplementation((path) =>
             path.includes('backend/package.json')
           );
           mockGlob.mockResolvedValue(['/test/backend']);
@@ -232,7 +235,7 @@ describe('Detect Command', () => {
           );
 
           const result = await detectProjectStructure('/test');
-          
+
           expect(result.backend).toBeDefined();
           expect(result.backend?.framework).toBe(name);
           expect(result.backend?.type).toBe('backend');
@@ -240,7 +243,7 @@ describe('Detect Command', () => {
       });
 
       it('should detect API spec files', async () => {
-        mockFs.existsSync.mockImplementation((path) => 
+        mockFs.existsSync.mockImplementation((path) =>
           path.includes('backend/package.json')
         );
         mockGlob.mockImplementation(async (pattern) => {
@@ -255,14 +258,14 @@ describe('Detect Command', () => {
         );
 
         const result = await detectProjectStructure('/test');
-        
+
         expect(result.backend?.apiSpec).toBe('src/swagger.json');
       });
     });
 
     describe('client detection', () => {
       it('should detect client by package name', async () => {
-        mockFs.existsSync.mockImplementation((path) => 
+        mockFs.existsSync.mockImplementation((path) =>
           path.includes('api-client/package.json')
         );
         mockGlob.mockResolvedValue(['/test/api-client']);
@@ -274,7 +277,7 @@ describe('Detect Command', () => {
         );
 
         const result = await detectProjectStructure('/test');
-        
+
         expect(result.client).toBeDefined();
         expect(result.client?.packageName).toBe('@myorg/api-client');
         expect(result.client?.type).toBe('client');
@@ -287,12 +290,10 @@ describe('Detect Command', () => {
           return false;
         });
         mockGlob.mockResolvedValue(['/test/client']);
-        mockFs.readFileSync.mockReturnValue(
-          JSON.stringify({ name: 'my-app' })
-        );
+        mockFs.readFileSync.mockReturnValue(JSON.stringify({ name: 'my-app' }));
 
         const result = await detectProjectStructure('/test');
-        
+
         expect(result.client).toBeDefined();
       });
     });
@@ -309,7 +310,7 @@ describe('Detect Command', () => {
 
       frameworks.forEach(({ dep, name }) => {
         it(`should detect ${name} frontend`, async () => {
-          mockFs.existsSync.mockImplementation((path) => 
+          mockFs.existsSync.mockImplementation((path) =>
             path.includes('frontend/package.json')
           );
           mockGlob.mockResolvedValue(['/test/frontend']);
@@ -320,7 +321,7 @@ describe('Detect Command', () => {
           );
 
           const result = await detectProjectStructure('/test');
-          
+
           expect(result.frontend).toBeDefined();
           expect(result.frontend?.framework).toBe(name);
           expect(result.frontend?.type).toBe('frontend');
@@ -330,7 +331,7 @@ describe('Detect Command', () => {
 
     describe('package manager detection', () => {
       it('should detect yarn', async () => {
-        mockFs.existsSync.mockImplementation((path) => 
+        mockFs.existsSync.mockImplementation((path) =>
           path.includes('yarn.lock')
         );
 
@@ -339,7 +340,7 @@ describe('Detect Command', () => {
       });
 
       it('should detect pnpm', async () => {
-        mockFs.existsSync.mockImplementation((path) => 
+        mockFs.existsSync.mockImplementation((path) =>
           path.includes('pnpm-lock.yaml')
         );
 
@@ -357,7 +358,7 @@ describe('Detect Command', () => {
 
     describe('port detection', () => {
       it('should detect port from scripts', async () => {
-        mockFs.existsSync.mockImplementation((path) => 
+        mockFs.existsSync.mockImplementation((path) =>
           path.includes('backend/package.json')
         );
         mockGlob.mockResolvedValue(['/test/backend']);
@@ -371,12 +372,12 @@ describe('Detect Command', () => {
         );
 
         const result = await detectProjectStructure('/test');
-        
+
         expect(result.backend?.port).toBe(3001);
       });
 
       it('should detect PORT environment variable', async () => {
-        mockFs.existsSync.mockImplementation((path) => 
+        mockFs.existsSync.mockImplementation((path) =>
           path.includes('backend/package.json')
         );
         mockGlob.mockResolvedValue(['/test/backend']);
@@ -390,7 +391,7 @@ describe('Detect Command', () => {
         );
 
         const result = await detectProjectStructure('/test');
-        
+
         expect(result.backend?.port).toBe(8080);
       });
     });

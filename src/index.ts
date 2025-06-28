@@ -1,9 +1,9 @@
 /**
  * OATSJS - OpenAPI TypeScript Sync
- * 
+ *
  * Main entry point for programmatic usage of OATS.
  * This module exports all public APIs for both CLI and programmatic usage.
- * 
+ *
  * @module oatsjs
  * @license MIT
  */
@@ -59,12 +59,16 @@ export {
 } from './errors/index.js';
 
 // Schema exports
-export { configSchema, validateConfig, mergeWithDefaults } from './config/schema.js';
+export {
+  configSchema,
+  validateConfig,
+  mergeWithDefaults,
+} from './config/schema.js';
 
 // Version export
 import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

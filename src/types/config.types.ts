@@ -1,9 +1,9 @@
 /**
  * OATSJS Configuration Type Definitions
- * 
+ *
  * This module defines the complete type system for OATS configuration,
  * ensuring type safety and IDE support for all configuration options.
- * 
+ *
  * @module @oatsjs/types/config
  * @author OATS Contributors
  * @license MIT
@@ -17,7 +17,11 @@ export type ApiSpecFormat = 'openapi3' | 'openapi2' | 'swagger2' | 'swagger1';
 /**
  * Supported TypeScript client generators
  */
-export type GeneratorType = 'custom' | '@hey-api/openapi-ts' | 'swagger-typescript-api' | 'openapi-generator-cli';
+export type GeneratorType =
+  | 'custom'
+  | '@hey-api/openapi-ts'
+  | 'swagger-typescript-api'
+  | 'openapi-generator-cli';
 
 /**
  * Service types for identification and validation
@@ -240,7 +244,14 @@ export interface FrontendServiceConfig extends BaseServiceConfig {
    * Frontend framework (for future framework-specific features)
    * @default "auto-detect"
    */
-  framework?: 'react' | 'vue' | 'angular' | 'svelte' | 'next' | 'nuxt' | 'auto-detect';
+  framework?:
+    | 'react'
+    | 'vue'
+    | 'angular'
+    | 'svelte'
+    | 'next'
+    | 'nuxt'
+    | 'auto-detect';
 
   /**
    * Pattern to detect when the frontend is ready

@@ -3,11 +3,12 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'fs';
+
 import inquirer from 'inquirer';
 import ora from 'ora';
 
-import { init } from '../init';
 import * as detectModule from '../detect';
+import { init } from '../init';
 
 // Mock modules
 jest.mock('fs');
@@ -90,12 +91,16 @@ describe('Init Command', () => {
         expect.stringContaining('oats.config.json'),
         expect.stringContaining('"path": "../backend"')
       );
-      expect(mockSpinner.succeed).toHaveBeenCalledWith('Configuration created!');
+      expect(mockSpinner.succeed).toHaveBeenCalledWith(
+        'Configuration created!'
+      );
     });
 
     it('should handle detection failure gracefully', async () => {
       mockFs.existsSync.mockReturnValue(false);
-      mockDetect.detectProjectStructure.mockRejectedValue(new Error('Detection failed'));
+      mockDetect.detectProjectStructure.mockRejectedValue(
+        new Error('Detection failed')
+      );
 
       await init({ yes: true });
 
@@ -127,10 +132,10 @@ describe('Init Command', () => {
       await init({});
 
       expect(mockInquirer.prompt).toHaveBeenCalled();
-      
+
       const writtenConfig = mockFs.writeFileSync.mock.calls[0][1] as string;
       const config = JSON.parse(writtenConfig);
-      
+
       expect(config.services.backend.path).toBe('../my-backend');
       expect(config.services.backend.port).toBe(5000);
       expect(config.services.client.packageName).toBe('@company/api');
@@ -161,7 +166,7 @@ describe('Init Command', () => {
 
       const writtenConfig = mockFs.writeFileSync.mock.calls[0][1] as string;
       const config = JSON.parse(writtenConfig);
-      
+
       expect(config.services.frontend).toBeDefined();
       expect(config.services.frontend.path).toBe('./packages/web');
       expect(config.services.frontend.port).toBe(3000);
@@ -232,7 +237,9 @@ describe('Init Command', () => {
         // Expected to exit
       }
 
-      expect(mockSpinner.fail).toHaveBeenCalledWith('Configuration validation failed');
+      expect(mockSpinner.fail).toHaveBeenCalledWith(
+        'Configuration validation failed'
+      );
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('Validation errors')
       );
@@ -257,7 +264,9 @@ describe('Init Command', () => {
 
       await init({});
 
-      expect(mockSpinner.warn).toHaveBeenCalledWith('Configuration has warnings');
+      expect(mockSpinner.warn).toHaveBeenCalledWith(
+        'Configuration has warnings'
+      );
       expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining('Warnings:')
       );
@@ -291,7 +300,9 @@ describe('Init Command', () => {
         // Expected to exit
       }
 
-      expect(mockSpinner.fail).toHaveBeenCalledWith('Failed to create configuration');
+      expect(mockSpinner.fail).toHaveBeenCalledWith(
+        'Failed to create configuration'
+      );
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.anything(),
         'Permission denied'

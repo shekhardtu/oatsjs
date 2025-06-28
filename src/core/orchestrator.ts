@@ -1,17 +1,19 @@
 /**
  * OATS Development Orchestrator
- * 
+ *
  * Manages multiple development services and coordinates synchronization
- * 
+ *
  * @module @oatsjs/core/orchestrator
  */
 
 import { EventEmitter } from 'events';
+
 import chalk from 'chalk';
 import { execa } from 'execa';
 
-import type { RuntimeConfig } from '../types/config.types.js';
 import { ServiceStartError } from '../errors/index.js';
+
+import type { RuntimeConfig } from '../types/config.types.js';
 
 export interface ServiceStatus {
   name: string;
@@ -82,7 +84,7 @@ export class DevSyncOrchestrator extends EventEmitter {
     console.log(chalk.yellow('🔄 Shutting down services...'));
 
     const stopPromises: Promise<void>[] = [];
-    
+
     for (const [name, status] of this.services) {
       if (status.process && !status.process.killed) {
         stopPromises.push(this.stopService(name));
@@ -139,7 +141,8 @@ export class DevSyncOrchestrator extends EventEmitter {
       status.process = child;
 
       let isReady = false;
-      const readyPattern = options.readyPattern || 'Server|started|listening|ready';
+      const readyPattern =
+        options.readyPattern || 'Server|started|listening|ready';
       const readyRegex = new RegExp(readyPattern, 'i');
 
       // Handle stdout
@@ -169,7 +172,7 @@ export class DevSyncOrchestrator extends EventEmitter {
           );
           status.status = 'error';
           status.error = error;
-          
+
           if (!isReady) {
             reject(error);
           } else {
@@ -216,7 +219,7 @@ export class DevSyncOrchestrator extends EventEmitter {
 
     return new Promise<void>((resolve) => {
       const child = status.process!;
-      
+
       child.on('exit', () => {
         console.log(chalk.green(`✅ ${name} service stopped`));
         resolve();
@@ -240,10 +243,12 @@ export class DevSyncOrchestrator extends EventEmitter {
    */
   private setupSignalHandlers(): void {
     const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM'];
-    
+
     signals.forEach((signal) => {
       process.on(signal, async () => {
-        console.log(chalk.yellow(`\n🔄 Received ${signal}, shutting down gracefully...`));
+        console.log(
+          chalk.yellow(`\n🔄 Received ${signal}, shutting down gracefully...`)
+        );
         await this.stop();
         process.exit(0);
       });

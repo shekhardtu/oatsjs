@@ -1,8 +1,11 @@
 /**
  * Jest Test Setup
- * 
+ *
  * This file runs before all tests to set up the test environment
  */
+
+import { expect } from '@jest/globals';
+import { validateConfig } from '../config/schema';
 
 // Set test environment
 process.env['NODE_ENV'] = 'test';
@@ -20,39 +23,25 @@ global.console = {
 
 // Add custom matchers
 expect.extend({
-  toBeValidConfig(received: any) {
-    const { validateConfig } = require('../config/schema');
+  toBeValidConfig(received) {
     const result = validateConfig(received);
-    
     return {
       pass: result.valid,
-      message: () => {
-        if (result.valid) {
-          return `Expected configuration to be invalid`;
-        } else {
-          const errors = result.errors.map((e: any) => `${e.path}: ${e.message}`).join('\n');
-          return `Expected configuration to be valid, but got errors:\n${errors}`;
-        }
-      },
+      message: () => result.valid ?
+        'Expected configuration to be invalid' :
+        `Expected configuration to be valid, but got errors:\n${result.errors.map(e => `${e.path}: ${e.message}`).join('\n')}`
     };
   },
-  
-  toHaveConfigError(received: any, expectedPath: string) {
-    const { validateConfig } = require('../config/schema');
+  toHaveConfigError(received, expectedPath) {
     const result = validateConfig(received);
-    const hasError = result.errors.some((e: any) => e.path === expectedPath);
-    
+    const hasError = result.errors.some(e => e.path === expectedPath);
     return {
       pass: hasError,
-      message: () => {
-        if (hasError) {
-          return `Expected configuration not to have error at path "${expectedPath}"`;
-        } else {
-          return `Expected configuration to have error at path "${expectedPath}"`;
-        }
-      },
+      message: () => hasError ?
+        `Expected configuration not to have error at path "${expectedPath}"` :
+        `Expected configuration to have error at path "${expectedPath}"`
     };
-  },
+  }
 });
 
 // Mock file system for tests

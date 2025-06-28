@@ -1,20 +1,21 @@
 /**
  * OATS Detect Command
- * 
+ *
  * Auto-detects project structure and generates configuration
- * 
+ *
  * @module @oatsjs/cli/detect
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join, relative } from 'path';
-import { glob } from 'glob';
 
 import chalk from 'chalk';
+import { glob } from 'glob';
 import ora from 'ora';
 
-import type { OatsConfig } from '../types/config.types.js';
 import { validateConfig } from '../config/schema.js';
+
+import type { OatsConfig } from '../types/config.types.js';
 // import { FileSystemError } from '../errors/index.js';
 
 interface DetectOptions {
@@ -90,16 +91,17 @@ export async function detect(options: DetectOptions): Promise<void> {
     writeFileSync(outputPath, configContent);
     writeSpinner.succeed(`Configuration saved to ${outputPath}`);
 
-    console.log('\n' + chalk.green('✅ Detection complete!'));
-    console.log('\n' + chalk.bold('Next steps:'));
+    console.log(`\n${chalk.green('✅ Detection complete!')}`);
+    console.log(`\n${chalk.bold('Next steps:')}`);
     console.log(chalk.cyan('  1. Review the configuration:'));
     console.log(chalk.dim(`     cat ${outputPath}`));
     console.log(chalk.cyan('  2. Start watching:'));
     console.log(chalk.dim('     oatsjs start'));
-
   } catch (error) {
     spinner.fail('Detection failed');
-    console.error(chalk.red(error instanceof Error ? error.message : String(error)));
+    console.error(
+      chalk.red(error instanceof Error ? error.message : String(error))
+    );
     process.exit(1);
   }
 }
@@ -107,7 +109,9 @@ export async function detect(options: DetectOptions): Promise<void> {
 /**
  * Detect project structure
  */
-export async function detectProjectStructure(rootPath: string): Promise<ProjectStructure> {
+export async function detectProjectStructure(
+  rootPath: string
+): Promise<ProjectStructure> {
   const structure: ProjectStructure = {};
 
   // Check if it's a monorepo
@@ -187,7 +191,9 @@ async function isMonorepo(path: string): Promise<boolean> {
 /**
  * Detect package manager
  */
-async function detectPackageManager(path: string): Promise<'npm' | 'yarn' | 'pnpm'> {
+async function detectPackageManager(
+  path: string
+): Promise<'npm' | 'yarn' | 'pnpm'> {
   if (existsSync(join(path, 'yarn.lock'))) {
     return 'yarn';
   }
@@ -200,23 +206,31 @@ async function detectPackageManager(path: string): Promise<'npm' | 'yarn' | 'pnp
 /**
  * Find backend service
  */
-async function findBackend(rootPath: string, pattern: string): Promise<DetectedService | null> {
+async function findBackend(
+  rootPath: string,
+  pattern: string
+): Promise<DetectedService | null> {
   const dirs = await glob(pattern, { cwd: rootPath, absolute: true });
 
   for (const dir of dirs) {
     if (!existsSync(join(dir, 'package.json'))) continue;
 
-    const packageJson = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf-8'));
-    const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
+    const packageJson = JSON.parse(
+      readFileSync(join(dir, 'package.json'), 'utf-8')
+    );
+    const deps = {
+      ...packageJson.dependencies,
+      ...packageJson.devDependencies,
+    };
 
     // Check for backend frameworks
     const frameworks = {
       express: 'Express',
       fastify: 'Fastify',
       '@nestjs/core': 'NestJS',
-      'koa': 'Koa',
+      koa: 'Koa',
       '@hapi/hapi': 'Hapi',
-      'restify': 'Restify',
+      restify: 'Restify',
     };
 
     for (const [dep, framework] of Object.entries(frameworks)) {
@@ -243,14 +257,19 @@ async function findBackend(rootPath: string, pattern: string): Promise<DetectedS
 /**
  * Find TypeScript client
  */
-async function findClient(rootPath: string, pattern: string): Promise<DetectedService | null> {
+async function findClient(
+  rootPath: string,
+  pattern: string
+): Promise<DetectedService | null> {
   const dirs = await glob(pattern, { cwd: rootPath, absolute: true });
 
   for (const dir of dirs) {
     if (!existsSync(join(dir, 'package.json'))) continue;
 
-    const packageJson = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf-8'));
-    
+    const packageJson = JSON.parse(
+      readFileSync(join(dir, 'package.json'), 'utf-8')
+    );
+
     // Check for client indicators
     const clientIndicators = [
       packageJson.name?.includes('client'),
@@ -281,14 +300,22 @@ async function findClient(rootPath: string, pattern: string): Promise<DetectedSe
 /**
  * Find frontend service
  */
-async function findFrontend(rootPath: string, pattern: string): Promise<DetectedService | null> {
+async function findFrontend(
+  rootPath: string,
+  pattern: string
+): Promise<DetectedService | null> {
   const dirs = await glob(pattern, { cwd: rootPath, absolute: true });
 
   for (const dir of dirs) {
     if (!existsSync(join(dir, 'package.json'))) continue;
 
-    const packageJson = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf-8'));
-    const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
+    const packageJson = JSON.parse(
+      readFileSync(join(dir, 'package.json'), 'utf-8')
+    );
+    const deps = {
+      ...packageJson.dependencies,
+      ...packageJson.devDependencies,
+    };
 
     // Check for frontend frameworks
     const frameworks = {
@@ -367,10 +394,13 @@ function detectPort(packageJson: any): number | undefined {
  * Display detected structure
  */
 function displayDetectedStructure(structure: ProjectStructure): void {
-  console.log('\n' + chalk.bold('Detected structure:'));
+  console.log(`\n${chalk.bold('Detected structure:')}`);
 
   if (structure.monorepo) {
-    console.log(chalk.cyan('  📦 Monorepo') + chalk.dim(` (${structure.rootPackageManager})`));
+    console.log(
+      chalk.cyan('  📦 Monorepo') +
+        chalk.dim(` (${structure.rootPackageManager})`)
+    );
   }
 
   if (structure.backend) {
@@ -420,7 +450,10 @@ function generateConfigFromStructure(structure: ProjectStructure): OatsConfig {
       backend: {
         path: structure.backend.path,
         port: structure.backend.port || 4000,
-        startCommand: structure.backend.packageManager === 'yarn' ? 'yarn dev' : 'npm run dev',
+        startCommand:
+          structure.backend.packageManager === 'yarn'
+            ? 'yarn dev'
+            : 'npm run dev',
         apiSpec: {
           path: structure.backend.apiSpec || 'src/swagger.json',
         },
@@ -430,9 +463,15 @@ function generateConfigFromStructure(structure: ProjectStructure): OatsConfig {
         packageName: structure.client.packageName || '@myorg/api-client',
         generator: 'custom',
         generateCommand:
-          structure.client.packageManager === 'yarn' ? 'yarn generate' : 'npm run generate',
-        buildCommand: structure.client.packageManager === 'yarn' ? 'yarn build' : 'npm run build',
-        linkCommand: structure.client.packageManager === 'yarn' ? 'yarn link' : 'npm link',
+          structure.client.packageManager === 'yarn'
+            ? 'yarn generate'
+            : 'npm run generate',
+        buildCommand:
+          structure.client.packageManager === 'yarn'
+            ? 'yarn build'
+            : 'npm run build',
+        linkCommand:
+          structure.client.packageManager === 'yarn' ? 'yarn link' : 'npm link',
       },
     },
   };
@@ -442,7 +481,10 @@ function generateConfigFromStructure(structure: ProjectStructure): OatsConfig {
     config.services.frontend = {
       path: structure.frontend.path,
       port: structure.frontend.port || 3000,
-      startCommand: structure.frontend.packageManager === 'yarn' ? 'yarn dev' : 'npm run dev',
+      startCommand:
+        structure.frontend.packageManager === 'yarn'
+          ? 'yarn dev'
+          : 'npm run dev',
       packageLinkCommand:
         structure.frontend.packageManager === 'yarn' ? 'yarn link' : 'npm link',
     };

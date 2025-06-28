@@ -1,13 +1,14 @@
 /**
  * Configuration Schema and Validation
- * 
+ *
  * This module provides TypeScript-based schema validation for OATS configuration,
  * complementing the Joi validation with compile-time type checking.
- * 
+ *
  * @module @oatsjs/config/schema
  */
 
 import Joi from 'joi';
+
 import type {
   OatsConfig,
   ApiSpecFormat,
@@ -21,7 +22,12 @@ import type {
 /**
  * Valid API specification formats
  */
-const API_SPEC_FORMATS: ApiSpecFormat[] = ['openapi3', 'openapi2', 'swagger2', 'swagger1'];
+const API_SPEC_FORMATS: ApiSpecFormat[] = [
+  'openapi3',
+  'openapi2',
+  'swagger2',
+  'swagger1',
+];
 
 /**
  * Valid generator types
@@ -43,28 +49,28 @@ const SYNC_STRATEGIES: SyncStrategy[] = ['smart', 'aggressive', 'conservative'];
  */
 export const configSchema = Joi.object<OatsConfig>({
   version: Joi.string().optional().default('1.0.0'),
-  
+
   services: Joi.object({
     backend: Joi.object({
-      path: Joi.string().required()
-        .messages({
-          'string.empty': 'Backend path cannot be empty',
-          'any.required': 'Backend path is required',
-        }),
+      path: Joi.string().required().messages({
+        'string.empty': 'Backend path cannot be empty',
+        'any.required': 'Backend path is required',
+      }),
       port: Joi.number().port().optional().default(4000),
-      startCommand: Joi.string().required()
-        .messages({
-          'string.empty': 'Backend start command cannot be empty',
-          'any.required': 'Backend start command is required',
-        }),
+      startCommand: Joi.string().required().messages({
+        'string.empty': 'Backend start command cannot be empty',
+        'any.required': 'Backend start command is required',
+      }),
       readyPattern: Joi.string().optional().default('Server listening on'),
       apiSpec: Joi.object({
-        path: Joi.string().required()
-          .messages({
-            'string.empty': 'API spec path cannot be empty',
-            'any.required': 'API spec path is required',
-          }),
-        format: Joi.string().valid(...API_SPEC_FORMATS).optional().default('openapi3'),
+        path: Joi.string().required().messages({
+          'string.empty': 'API spec path cannot be empty',
+          'any.required': 'API spec path is required',
+        }),
+        format: Joi.string()
+          .valid(...API_SPEC_FORMATS)
+          .optional()
+          .default('openapi3'),
         watch: Joi.array().items(Joi.string()).optional(),
       }).required(),
       env: Joi.object().pattern(Joi.string(), Joi.string()).optional(),
@@ -72,25 +78,28 @@ export const configSchema = Joi.object<OatsConfig>({
     }).required(),
 
     client: Joi.object({
-      path: Joi.string().required()
-        .messages({
-          'string.empty': 'Client path cannot be empty',
-          'any.required': 'Client path is required',
-        }),
-      packageName: Joi.string().required()
+      path: Joi.string().required().messages({
+        'string.empty': 'Client path cannot be empty',
+        'any.required': 'Client path is required',
+      }),
+      packageName: Joi.string()
+        .required()
         .pattern(/^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/)
         .messages({
           'string.empty': 'Package name cannot be empty',
           'any.required': 'Package name is required',
-          'string.pattern.base': 'Package name must be a valid npm package name',
+          'string.pattern.base':
+            'Package name must be a valid npm package name',
         }),
-      generator: Joi.string().valid(...GENERATOR_TYPES).required(),
+      generator: Joi.string()
+        .valid(...GENERATOR_TYPES)
+        .required(),
       generateCommand: Joi.when('generator', {
         is: 'custom',
-        then: Joi.string().required()
-          .messages({
-            'any.required': 'Generate command is required when using custom generator',
-          }),
+        then: Joi.string().required().messages({
+          'any.required':
+            'Generate command is required when using custom generator',
+        }),
         otherwise: Joi.string().optional(),
       }),
       buildCommand: Joi.string().optional(),
@@ -106,7 +115,15 @@ export const configSchema = Joi.object<OatsConfig>({
       startCommand: Joi.string().required(),
       packageLinkCommand: Joi.string().optional(),
       framework: Joi.string()
-        .valid('react', 'vue', 'angular', 'svelte', 'next', 'nuxt', 'auto-detect')
+        .valid(
+          'react',
+          'vue',
+          'angular',
+          'svelte',
+          'next',
+          'nuxt',
+          'auto-detect'
+        )
         .optional()
         .default('auto-detect'),
       readyPattern: Joi.string().optional().default('compiled successfully'),
@@ -115,7 +132,10 @@ export const configSchema = Joi.object<OatsConfig>({
   }).required(),
 
   sync: Joi.object({
-    strategy: Joi.string().valid(...SYNC_STRATEGIES).optional().default('smart'),
+    strategy: Joi.string()
+      .valid(...SYNC_STRATEGIES)
+      .optional()
+      .default('smart'),
     debounceMs: Joi.number().min(0).optional().default(1000),
     autoLink: Joi.boolean().optional().default(true),
     notifications: Joi.boolean().optional().default(false),
@@ -123,21 +143,28 @@ export const configSchema = Joi.object<OatsConfig>({
     retryDelayMs: Joi.number().min(0).optional().default(2000),
     runInitialGeneration: Joi.boolean().optional().default(false),
     ignore: Joi.array().items(Joi.string()).optional(),
-  }).optional().default({}),
+  })
+    .optional()
+    .default({}),
 
   log: Joi.object({
-    level: Joi.string().valid('debug', 'info', 'warn', 'error').optional().default('info'),
+    level: Joi.string()
+      .valid('debug', 'info', 'warn', 'error')
+      .optional()
+      .default('info'),
     colors: Joi.boolean().optional().default(true),
     timestamps: Joi.boolean().optional().default(false),
     file: Joi.string().optional(),
-  }).optional().default({}),
+  })
+    .optional()
+    .default({}),
 
   metadata: Joi.object().optional(),
 });
 
 /**
  * Validates an OATS configuration object
- * 
+ *
  * @param config - The configuration to validate
  * @returns Validation result with errors and warnings
  */
@@ -155,12 +182,14 @@ export function validateConfig(config: unknown): ConfigValidationResult {
 
   if (error) {
     result.valid = false;
-    result.errors = error.details.map((detail): ConfigValidationError => ({
-      code: detail.type,
-      message: detail.message,
-      path: detail.path.join('.'),
-      value: detail.context?.value,
-    }));
+    result.errors = error.details.map(
+      (detail): ConfigValidationError => ({
+        code: detail.type,
+        message: detail.message,
+        path: detail.path.join('.'),
+        value: detail.context?.value,
+      })
+    );
   }
 
   // Additional custom validations
@@ -180,7 +209,7 @@ export function validateConfig(config: unknown): ConfigValidationResult {
 
 /**
  * Performs custom validations that Joi cannot handle
- * 
+ *
  * @param config - The configuration to validate
  * @returns Array of validation errors
  */
@@ -198,7 +227,10 @@ function performCustomValidations(config: OatsConfig): ConfigValidationError[] {
   }
 
   // Validate custom generator command
-  if (config.services.client.generator === 'custom' && !config.services.client.generateCommand) {
+  if (
+    config.services.client.generator === 'custom' &&
+    !config.services.client.generateCommand
+  ) {
     errors.push({
       code: 'MISSING_GENERATE_COMMAND',
       message: 'Generate command is required when using custom generator',
@@ -224,7 +256,7 @@ function performCustomValidations(config: OatsConfig): ConfigValidationError[] {
 
 /**
  * Generates warnings for potential issues
- * 
+ *
  * @param config - The configuration to analyze
  * @returns Array of warnings
  */
@@ -235,9 +267,11 @@ function generateWarnings(config: OatsConfig): ConfigValidationWarning[] {
   if (!config.services.frontend) {
     warnings.push({
       code: 'NO_FRONTEND',
-      message: 'No frontend configuration provided. OATS will not start a frontend service.',
+      message:
+        'No frontend configuration provided. OATS will not start a frontend service.',
       path: 'services.frontend',
-      suggestion: 'Add frontend configuration if you want OATS to manage your frontend service',
+      suggestion:
+        'Add frontend configuration if you want OATS to manage your frontend service',
     });
   }
 
@@ -267,7 +301,8 @@ function generateWarnings(config: OatsConfig): ConfigValidationWarning[] {
       code: 'NO_BUILD_COMMAND',
       message: 'No build command specified for client',
       path: 'services.client.buildCommand',
-      suggestion: 'Add a build command to ensure the client is properly compiled',
+      suggestion:
+        'Add a build command to ensure the client is properly compiled',
     });
   }
 
@@ -297,7 +332,7 @@ export const defaultConfig: Partial<OatsConfig> = {
 
 /**
  * Merges user configuration with defaults
- * 
+ *
  * @param userConfig - User-provided configuration
  * @returns Merged configuration
  */

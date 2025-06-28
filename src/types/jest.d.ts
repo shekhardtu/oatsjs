@@ -1,6 +1,4 @@
-/**
- * Jest custom matchers type definitions
- */
+/// <reference types="jest" />
 
 declare global {
   namespace jest {

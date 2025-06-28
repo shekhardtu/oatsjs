@@ -2,7 +2,8 @@
  * Configuration Schema Tests
  */
 
-import { validateConfig, mergeWithDefaults, defaultConfig } from '../schema';
+import { mergeWithDefaults, validateConfig } from '../schema';
+
 import type { OatsConfig } from '../../types/config.types';
 
 describe('Configuration Schema', () => {
