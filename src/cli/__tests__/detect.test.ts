@@ -408,5 +408,232 @@ describe('Detect Command', () => {
       expect(result.backend?.packageManager).toBe('yarn');
       expect(result.client?.packageManager).toBe('yarn');
     });
+
+    describe('Python backend detection', () => {
+      it('should detect FastAPI backend', async () => {
+        mockGlob.mockImplementation(async (pattern: string | string[]) => {
+          if (typeof pattern === 'string' && pattern === '../*') {
+            return ['../backend', '../client'];
+          }
+          return [];
+        });
+
+        mockFs.existsSync.mockImplementation((path) => {
+          const pathStr = path.toString();
+          if (pathStr.includes('backend/requirements.txt')) return true;
+          if (pathStr.includes('backend/main.py')) return true;
+          if (pathStr.includes('client/package.json')) return true;
+          return false;
+        });
+
+        mockFs.readFileSync.mockImplementation((path) => {
+          const pathStr = path.toString();
+          if (pathStr.includes('backend/requirements.txt')) {
+            return 'fastapi==0.104.1\nuvicorn==0.24.0\npydantic==2.5.0';
+          }
+          if (pathStr.includes('client/package.json')) {
+            return JSON.stringify({
+              name: '@test/client',
+              scripts: { generate: 'openapi-ts' },
+            });
+          }
+          return '{}';
+        });
+
+        const result = await detectProjectStructure(process.cwd());
+
+        expect(result.backend).toBeDefined();
+        expect(result.backend?.framework).toBe('FastAPI');
+        expect(result.backend?.runtime).toBe('python');
+        expect(result.backend?.pythonPackageManager).toBe('pip');
+        expect(result.backend?.apiSpec).toBe('runtime:/docs/openapi.json');
+      });
+
+      it('should detect Flask backend', async () => {
+        mockGlob.mockImplementation(async (pattern: string | string[]) => {
+          if (typeof pattern === 'string' && pattern === '../*') {
+            return ['../backend', '../client'];
+          }
+          return [];
+        });
+
+        mockFs.existsSync.mockImplementation((path) => {
+          const pathStr = path.toString();
+          if (pathStr.includes('backend/requirements.txt')) return true;
+          if (pathStr.includes('backend/app.py')) return true;
+          if (pathStr.includes('client/package.json')) return true;
+          return false;
+        });
+
+        mockFs.readFileSync.mockImplementation((path) => {
+          const pathStr = path.toString();
+          if (pathStr.includes('backend/requirements.txt')) {
+            return 'flask==3.0.0\nflask-cors==4.0.0';
+          }
+          if (pathStr.includes('client/package.json')) {
+            return JSON.stringify({
+              name: '@test/client',
+              scripts: { generate: 'openapi-ts' },
+            });
+          }
+          return '{}';
+        });
+
+        const result = await detectProjectStructure(process.cwd());
+
+        expect(result.backend).toBeDefined();
+        expect(result.backend?.framework).toBe('Flask');
+        expect(result.backend?.runtime).toBe('python');
+      });
+
+      it('should detect Django backend by manage.py', async () => {
+        mockGlob.mockImplementation(async (pattern: string | string[]) => {
+          if (typeof pattern === 'string' && pattern === '../*') {
+            return ['../backend', '../client'];
+          }
+          return [];
+        });
+
+        mockFs.existsSync.mockImplementation((path) => {
+          const pathStr = path.toString();
+          if (pathStr.includes('backend/manage.py')) return true;
+          if (pathStr.includes('client/package.json')) return true;
+          return false;
+        });
+
+        mockFs.readFileSync.mockImplementation((path) => {
+          const pathStr = path.toString();
+          if (pathStr.includes('client/package.json')) {
+            return JSON.stringify({
+              name: '@test/client',
+              scripts: { generate: 'openapi-ts' },
+            });
+          }
+          return '{}';
+        });
+
+        const result = await detectProjectStructure(process.cwd());
+
+        expect(result.backend).toBeDefined();
+        expect(result.backend?.framework).toBe('Django');
+        expect(result.backend?.runtime).toBe('python');
+      });
+
+      it('should detect Poetry package manager', async () => {
+        mockGlob.mockImplementation(async (pattern: string | string[]) => {
+          if (typeof pattern === 'string' && pattern === '../*') {
+            return ['../backend', '../client'];
+          }
+          return [];
+        });
+
+        mockFs.existsSync.mockImplementation((path) => {
+          const pathStr = path.toString();
+          if (pathStr.includes('backend/pyproject.toml')) return true;
+          if (pathStr.includes('backend/poetry.lock')) return true;
+          if (pathStr.includes('client/package.json')) return true;
+          return false;
+        });
+
+        mockFs.readFileSync.mockImplementation((path) => {
+          const pathStr = path.toString();
+          if (pathStr.includes('backend/pyproject.toml')) {
+            return '[tool.poetry]\nname = "backend"\n\n[tool.poetry.dependencies]\nfastapi = "^0.104.1"';
+          }
+          if (pathStr.includes('client/package.json')) {
+            return JSON.stringify({
+              name: '@test/client',
+              scripts: { generate: 'openapi-ts' },
+            });
+          }
+          return '{}';
+        });
+
+        const result = await detectProjectStructure(process.cwd());
+
+        expect(result.backend).toBeDefined();
+        expect(result.backend?.pythonPackageManager).toBe('poetry');
+      });
+
+      it('should detect virtual environment', async () => {
+        mockGlob.mockImplementation(async (pattern: string | string[]) => {
+          if (typeof pattern === 'string' && pattern === '../*') {
+            return ['../backend', '../client'];
+          }
+          return [];
+        });
+
+        mockFs.existsSync.mockImplementation((path) => {
+          const pathStr = path.toString();
+          if (pathStr.includes('backend/requirements.txt')) return true;
+          if (pathStr.includes('backend/venv')) return true;
+          if (pathStr.includes('client/package.json')) return true;
+          return false;
+        });
+
+        mockFs.readFileSync.mockImplementation((path) => {
+          const pathStr = path.toString();
+          if (pathStr.includes('backend/requirements.txt')) {
+            return 'fastapi==0.104.1';
+          }
+          if (pathStr.includes('client/package.json')) {
+            return JSON.stringify({
+              name: '@test/client',
+              scripts: { generate: 'openapi-ts' },
+            });
+          }
+          return '{}';
+        });
+
+        const result = await detectProjectStructure(process.cwd());
+
+        expect(result.backend).toBeDefined();
+        expect(result.backend?.virtualEnv).toBe('venv');
+      });
+
+      it('should prefer Python backend over Node.js when both exist', async () => {
+        mockGlob.mockImplementation(async (pattern: string | string[]) => {
+          if (typeof pattern === 'string' && pattern === '../*') {
+            return ['../backend', '../client'];
+          }
+          return [];
+        });
+
+        mockFs.existsSync.mockImplementation((path) => {
+          const pathStr = path.toString();
+          // Both Python and Node.js files exist
+          if (pathStr.includes('backend/requirements.txt')) return true;
+          if (pathStr.includes('backend/package.json')) return true;
+          if (pathStr.includes('client/package.json')) return true;
+          return false;
+        });
+
+        mockFs.readFileSync.mockImplementation((path) => {
+          const pathStr = path.toString();
+          if (pathStr.includes('backend/requirements.txt')) {
+            return 'fastapi==0.104.1';
+          }
+          if (pathStr.includes('backend/package.json')) {
+            return JSON.stringify({
+              dependencies: { express: '^4.18.0' },
+            });
+          }
+          if (pathStr.includes('client/package.json')) {
+            return JSON.stringify({
+              name: '@test/client',
+              scripts: { generate: 'openapi-ts' },
+            });
+          }
+          return '{}';
+        });
+
+        const result = await detectProjectStructure(process.cwd());
+
+        // Should detect Python first
+        expect(result.backend).toBeDefined();
+        expect(result.backend?.runtime).toBe('python');
+        expect(result.backend?.framework).toBe('FastAPI');
+      });
+    });
   });
 });

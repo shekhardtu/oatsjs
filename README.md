@@ -9,7 +9,7 @@
 ## 🎯 The Problem
 
 You're building a TypeScript full-stack app with:
-- A backend that generates OpenAPI/Swagger specs
+- A backend (Node.js or Python) that generates OpenAPI/Swagger specs
 - A TypeScript client generated from those specs
 - A frontend that uses the TypeScript client
 
@@ -38,6 +38,21 @@ Now when you change your backend API, OATS automatically:
 - ✅ Builds the client
 - ✅ Links it to your frontend
 - ✅ Your frontend hot-reloads with the new types!
+
+## 🌐 Supported Technologies
+
+### Backend Frameworks
+- **Node.js**: Express, Fastify, NestJS, Koa, Hapi, Restify
+- **Python**: FastAPI, Flask, Django (with DRF)
+
+### Frontend Frameworks
+- React, Vue, Angular, Svelte, Next.js, Nuxt, Remix
+
+### TypeScript Client Generators
+- Custom generators (recommended)
+- @hey-api/openapi-ts
+- swagger-typescript-api
+- openapi-generator-cli
 
 ## 🚀 Quick Start
 
@@ -78,6 +93,13 @@ Create `oats.config.json` in your project root:
 ```
 
 **Note:** Frontend configuration is optional! If you're running oatsjs from your frontend project, it will just sync the backend and client without starting another frontend server.
+
+### Why `port` and `startCommand` are required for frontend
+
+When you do configure a frontend service, both `port` and `startCommand` are **required** because:
+- Different frameworks use different default ports (React: 3000, Vite: 5173, Angular: 4200)
+- Different frameworks use different start commands (`npm start`, `yarn dev`, `ng serve`)
+- This ensures OATSJS knows exactly how to start and monitor your frontend
 
 ### 3. Add Script to package.json
 
@@ -156,6 +178,12 @@ Works with any OpenAPI client generator:
       "path": "../backend",           // Path to backend (relative or absolute)
       "port": 4000,                   // Backend dev server port (optional)
       "startCommand": "yarn dev",     // Command to start backend
+      "runtime": "node",              // Runtime: "node" (default) or "python"
+      "python": {                     // Python-specific config (only if runtime is "python")
+        "virtualEnv": "venv",         // Virtual environment directory
+        "packageManager": "pip",      // Package manager: "pip", "poetry", or "pipenv"
+        "executable": "python"        // Python executable (default: "python")
+      },
       "apiSpec": {
         "path": "src/swagger.json"    // Path to OpenAPI spec (relative to backend)
       }
@@ -169,9 +197,9 @@ Works with any OpenAPI client generator:
       "linkCommand": "yarn link"           // Command to link for local dev
     },
     "frontend": {                      // OPTIONAL - only if you want oatsjs to start it
-      "path": ".",                    // Path to frontend (usually current dir)
-      "port": 5173,                   // Frontend dev server port
-      "startCommand": "yarn dev",     // Command to start frontend
+      "path": ".",                    // Path to frontend
+      "port": 5173,                   // REQUIRED - Must match your dev server port
+      "startCommand": "yarn dev",     // REQUIRED - Your dev server command
       "packageLinkCommand": "yarn link"  // Command to link packages
     }
   },
@@ -192,6 +220,22 @@ Works with any OpenAPI client generator:
     "showServiceOutput": true,      // Show backend/frontend console output
     "quiet": false,                 // Quiet mode - only essential messages
     "file": "./oats.log"           // Optional log file path
+  }
+}
+```
+
+### Python Backend Notes
+
+For Python backends like FastAPI that generate OpenAPI specs at runtime:
+- Use `"runtime:/path/to/spec"` format for the API spec path
+- OATSJS will fetch the spec from the running server
+- Make sure your backend is configured to expose the OpenAPI spec
+
+Example for FastAPI:
+```json
+{
+  "apiSpec": {
+    "path": "runtime:/openapi.json"  // Fetched from http://localhost:8000/openapi.json
   }
 }
 ```
@@ -316,7 +360,49 @@ oatsjs detect
 
 ## 📚 Real-World Examples
 
-### Example 1: Express + React + @hey-api/openapi-ts
+### Example 1: FastAPI (Python) + React + @hey-api/openapi-ts
+
+**Project Structure:**
+```
+my-project/
+├── backend/          # FastAPI backend
+├── api-client/       # Generated TypeScript client
+└── frontend/         # React app
+```
+
+**oats.config.json:**
+```json
+{
+  "services": {
+    "backend": {
+      "path": "../backend",
+      "port": 8000,
+      "runtime": "python",
+      "python": {
+        "virtualEnv": "venv"
+      },
+      "startCommand": "source venv/bin/activate && uvicorn main:app --reload --port 8000",
+      "apiSpec": {
+        "path": "runtime:/openapi.json"  // FastAPI generates at runtime
+      }
+    },
+    "client": {
+      "path": "../api-client",
+      "packageName": "@myapp/api-client",
+      "generator": "@hey-api/openapi-ts",
+      "generateCommand": "npm run generate",
+      "buildCommand": "npm run build"
+    },
+    "frontend": {
+      "path": "./",
+      "port": 3000,
+      "startCommand": "npm start"
+    }
+  }
+}
+```
+
+### Example 2: Express + React + Custom Generator
 
 **Project Structure:**
 ```

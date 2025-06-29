@@ -1,0 +1,34 @@
+{
+  "services": {
+    "backend": {
+      "path": "../backend",
+      "port": 8000,
+      "startCommand": "source venv/bin/activate && uvicorn main:app --reload --port 8000",
+      "runtime": "python",
+      "python": {
+        "virtualEnv": "venv",
+        "packageManager": "pip"
+      },
+      "apiSpec": {
+        "path": "runtime:/openapi.json"
+      }
+    },
+    "client": {
+      "path": "../client",
+      "packageName": "@example/api-client",
+      "generator": "@hey-api/openapi-ts",
+      "generateCommand": "npm run generate",
+      "buildCommand": "npm run build",
+      "generatorConfig": {
+        "input": "./swagger.json",
+        "output": "./src",
+        "client": "fetch"
+      }
+    }
+  },
+  "sync": {
+    "strategy": "smart",
+    "debounceMs": 2000,
+    "autoLink": true
+  }
+}

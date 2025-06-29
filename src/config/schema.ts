@@ -56,12 +56,33 @@ export const configSchema = Joi.object<OatsConfig>({
         'string.empty': 'Backend path cannot be empty',
         'any.required': 'Backend path is required',
       }),
-      port: Joi.number().port().optional().default(4000),
+      port: Joi.number().port().optional().when('runtime', {
+        is: 'python',
+        then: Joi.number().default(8000),
+        otherwise: Joi.number().default(4000),
+      }),
       startCommand: Joi.string().required().messages({
         'string.empty': 'Backend start command cannot be empty',
         'any.required': 'Backend start command is required',
       }),
-      readyPattern: Joi.string().optional().default('Server listening on'),
+      readyPattern: Joi.string().optional().when('runtime', {
+        is: 'python',
+        then: Joi.string().default('Uvicorn running on'),
+        otherwise: Joi.string().default('Server listening on'),
+      }),
+      runtime: Joi.string().valid('node', 'python').optional().default('node'),
+      python: Joi.when('runtime', {
+        is: 'python',
+        then: Joi.object({
+          virtualEnv: Joi.string().optional(),
+          packageManager: Joi.string()
+            .valid('pip', 'poetry', 'pipenv')
+            .optional()
+            .default('pip'),
+          executable: Joi.string().optional().default('python'),
+        }).optional(),
+        otherwise: Joi.forbidden(),
+      }),
       apiSpec: Joi.object({
         path: Joi.string().required().messages({
           'string.empty': 'API spec path cannot be empty',
@@ -110,9 +131,19 @@ export const configSchema = Joi.object<OatsConfig>({
     }).required(),
 
     frontend: Joi.object({
-      path: Joi.string().required(),
-      port: Joi.number().port().optional().default(3000),
-      startCommand: Joi.string().required(),
+      path: Joi.string().required().messages({
+        'string.empty': 'Frontend path cannot be empty',
+        'any.required': 'Frontend path is required',
+      }),
+      port: Joi.number().port().required().messages({
+        'number.base': 'Frontend port must be a number',
+        'number.port': 'Frontend port must be a valid port number (1-65535)',
+        'any.required': 'Frontend port is required - specify the exact port your dev server uses (e.g., 3000 for React, 5173 for Vite, 4200 for Angular)',
+      }),
+      startCommand: Joi.string().required().messages({
+        'string.empty': 'Frontend start command cannot be empty',
+        'any.required': 'Frontend start command is required (e.g., "npm start" for React, "npm run dev" for Vite, "ng serve" for Angular)',
+      }),
       packageLinkCommand: Joi.string().optional(),
       framework: Joi.string()
         .valid(
