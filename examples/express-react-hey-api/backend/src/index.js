@@ -188,7 +188,7 @@ app.get('/', (req, res) => {
 app.get('/todos', (req, res) => {
   const skip = parseInt(req.query.skip) || 0;
   const limit = parseInt(req.query.limit) || 100;
-  
+
   const paginatedTodos = todos.slice(skip, skip + limit);
   res.json(paginatedTodos);
 });
@@ -268,8 +268,8 @@ app.post('/todos', (req, res) => {
  *               $ref: '#/components/schemas/Error'
  */
 app.get('/todos/:id', (req, res) => {
-  const todo = todos.find(t => t.id === req.params.id);
-  
+  const todo = todos.find((t) => t.id === req.params.id);
+
   if (!todo) {
     return res.status(404).json({ error: 'Todo not found' });
   }
@@ -311,8 +311,8 @@ app.get('/todos/:id', (req, res) => {
  *               $ref: '#/components/schemas/Error'
  */
 app.put('/todos/:id', (req, res) => {
-  const todoIndex = todos.findIndex(t => t.id === req.params.id);
-  
+  const todoIndex = todos.findIndex((t) => t.id === req.params.id);
+
   if (todoIndex === -1) {
     return res.status(404).json({ error: 'Todo not found' });
   }
@@ -323,7 +323,7 @@ app.put('/todos/:id', (req, res) => {
   if (title !== undefined) todo.title = title;
   if (description !== undefined) todo.description = description;
   if (completed !== undefined) todo.completed = completed;
-  
+
   todo.updatedAt = new Date().toISOString();
 
   res.json(todo);
@@ -360,8 +360,8 @@ app.put('/todos/:id', (req, res) => {
  *               $ref: '#/components/schemas/Error'
  */
 app.delete('/todos/:id', (req, res) => {
-  const todoIndex = todos.findIndex(t => t.id === req.params.id);
-  
+  const todoIndex = todos.findIndex((t) => t.id === req.params.id);
+
   if (todoIndex === -1) {
     return res.status(404).json({ error: 'Todo not found' });
   }
@@ -370,39 +370,17 @@ app.delete('/todos/:id', (req, res) => {
   res.json({ message: 'Todo deleted successfully' });
 });
 
-/**
- * @swagger
- * /todos/search:
- *   get:
- *     summary: Search todos
- *     tags: [Todos]
- *     parameters:
- *       - in: query
- *         name: q
- *         required: true
- *         schema:
- *           type: string
- *         description: Search query
- *     responses:
- *       200:
- *         description: Search results
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Todo'
- */
 app.get('/todos/search', (req, res) => {
   const query = req.query.q?.toLowerCase();
-  
+
   if (!query) {
     return res.json([]);
   }
 
-  const results = todos.filter(todo => 
-    todo.title.toLowerCase().includes(query) ||
-    (todo.description && todo.description.toLowerCase().includes(query))
+  const results = todos.filter(
+    (todo) =>
+      todo.title.toLowerCase().includes(query) ||
+      (todo.description && todo.description.toLowerCase().includes(query))
   );
 
   res.json(results);
@@ -412,8 +390,10 @@ app.get('/todos/search', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
   console.log(`API documentation available at http://localhost:${PORT}/docs`);
-  console.log(`OpenAPI spec available at http://localhost:${PORT}/swagger.json`);
-  
+  console.log(
+    `OpenAPI spec available at http://localhost:${PORT}/swagger.json`
+  );
+
   // Save initial swagger spec
   saveSwaggerSpec();
 });
