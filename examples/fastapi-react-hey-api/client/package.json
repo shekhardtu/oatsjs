@@ -1,0 +1,24 @@
+{
+  "name": "@example/api-client",
+  "version": "1.0.0",
+  "description": "TypeScript client for Todo API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "generate": "openapi-ts",
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "^0.45.1",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@hey-api/client-fetch": "^0.13.1"
+  },
+  "files": [
+    "dist"
+  ]
+}

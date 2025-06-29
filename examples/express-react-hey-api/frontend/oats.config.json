@@ -1,0 +1,24 @@
+{
+  "services": {
+    "backend": {
+      "path": "../backend",
+      "port": 4000,
+      "startCommand": "npm run dev",
+      "apiSpec": {
+        "path": "src/swagger.json"
+      }
+    },
+    "client": {
+      "path": "../client",
+      "packageName": "@example/todo-api-client",
+      "generator": "@hey-api/openapi-ts",
+      "generateCommand": "npm run generate",
+      "buildCommand": "npm run build"
+    }
+  },
+  "sync": {
+    "strategy": "smart",
+    "debounceMs": 1000,
+    "autoLink": true
+  }
+}

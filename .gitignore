@@ -85,4 +85,9 @@ temp/
 test-project/
 test-output/
 
+# Claude-specific files (keep local only)
+CLAUDE.md
+claude-*.md
+*claude*
+
 # git rm -r --cached .

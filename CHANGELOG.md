@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.11] - 2025-06-29
+
+### Added
+- Express + React + @hey-api example with axios client
+- FastAPI + React + @hey-api example with fetch client
+- Comprehensive example documentation with troubleshooting guides
+- Examples .gitignore for build artifacts
+
+### Changed
+- Made frontend `port` and `startCommand` fields mandatory when frontend config is provided
+- Moved `oats.config.json` to frontend directory in examples (best practice)
+- Enhanced configuration validation with helpful error messages for missing frontend fields
+
+### Fixed
+- Fixed oats.config.json location in FastAPI example
+- Fixed TypeScript version compatibility in examples
+- Fixed missing dependencies in client generation
+
 ## [Unreleased]
 
 ### Added

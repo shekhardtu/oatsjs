@@ -77,27 +77,61 @@ export interface BaseServiceConfig {
 }
 
 /**
+ * Supported runtime environments
+ */
+export type RuntimeType = 'node' | 'python';
+
+/**
  * Backend service configuration
  */
 export interface BackendServiceConfig extends BaseServiceConfig {
   /**
    * Port number for the backend development server
-   * @default 4000
+   * @default 4000 for Node.js, 8000 for Python
    */
   port?: number;
 
   /**
    * Command to start the backend service
-   * @example "npm run dev", "yarn dev", "docker-compose up"
+   * @example "npm run dev", "yarn dev", "uvicorn main:app --reload"
    */
   startCommand: string;
 
   /**
    * Pattern to detect when the backend is ready
    * Used to determine when to start watching for changes
-   * @default "Server listening on"
+   * @default "Server listening on" for Node.js, "Uvicorn running on" for Python
    */
   readyPattern?: string;
+
+  /**
+   * Runtime environment for the backend
+   * @default "node"
+   */
+  runtime?: RuntimeType;
+
+  /**
+   * Python-specific configuration
+   */
+  python?: {
+    /**
+     * Virtual environment directory name
+     * @example "venv", ".venv", "env"
+     */
+    virtualEnv?: string;
+
+    /**
+     * Python package manager
+     * @default "pip"
+     */
+    packageManager?: 'pip' | 'poetry' | 'pipenv';
+
+    /**
+     * Python executable path (if custom)
+     * @default "python" or "python3"
+     */
+    executable?: string;
+  };
 
   /**
    * API specification configuration
@@ -224,13 +258,15 @@ export interface ClientServiceConfig extends BaseServiceConfig {
 export interface FrontendServiceConfig extends BaseServiceConfig {
   /**
    * Port number for the frontend development server
-   * @default 3000
+   * Required to avoid conflicts - must match your dev server's actual port
+   * @example 3000 for React, 5173 for Vite, 4200 for Angular
    */
-  port?: number;
+  port: number;
 
   /**
    * Command to start the frontend service
-   * @example "npm start", "yarn dev", "ng serve"
+   * Required to support different frameworks
+   * @example "npm start", "yarn dev", "ng serve", "pnpm dev"
    */
   startCommand: string;
 

@@ -249,6 +249,13 @@ export class DevSyncEngine extends EventEmitter {
    * Check for meaningful changes in API spec
    */
   private async checkForMeaningfulChanges(): Promise<boolean> {
+    // Handle runtime API specs (e.g., FastAPI)
+    if (this.config.services.backend.apiSpec.path.startsWith('runtime:')) {
+      // For runtime specs, we always assume there might be changes
+      // since FastAPI generates specs dynamically
+      return true;
+    }
+
     const specPath = join(
       this.config.resolvedPaths.backend,
       this.config.services.backend.apiSpec.path
@@ -272,22 +279,46 @@ export class DevSyncEngine extends EventEmitter {
   private async generateClient(): Promise<void> {
     console.log(chalk.blue('🏗️  Generating TypeScript client...'));
 
-    // Copy swagger.json to client directory for local generation
-    const specPath = join(
-      this.config.resolvedPaths.backend,
-      this.config.services.backend.apiSpec.path
-    );
     const clientSwaggerPath = join(
       this.config.resolvedPaths.client,
       'swagger.json'
     );
 
-    try {
-      const { copyFileSync } = await import('fs');
-      copyFileSync(specPath, clientSwaggerPath);
-      console.log(chalk.dim('Copied swagger.json to client directory'));
-    } catch (error) {
-      console.error(chalk.red('Failed to copy swagger.json:'), error);
+    // Handle runtime API specs (e.g., FastAPI)
+    if (this.config.services.backend.apiSpec.path.startsWith('runtime:')) {
+      const runtimePath = this.config.services.backend.apiSpec.path.replace('runtime:', '');
+      const apiUrl = `http://localhost:${this.config.services.backend.port}${runtimePath}`;
+      
+      console.log(chalk.dim(`Fetching OpenAPI spec from ${apiUrl}...`));
+      
+      try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch OpenAPI spec: ${response.statusText}`);
+        }
+        const spec = await response.json();
+        
+        const { writeFileSync } = await import('fs');
+        writeFileSync(clientSwaggerPath, JSON.stringify(spec, null, 2));
+        console.log(chalk.dim('Fetched and saved OpenAPI spec from runtime'));
+      } catch (error) {
+        console.error(chalk.red('Failed to fetch runtime OpenAPI spec:'), error);
+        throw new ApiSpecError(`Failed to fetch runtime API spec: ${error}`, apiUrl);
+      }
+    } else {
+      // Copy static swagger.json to client directory
+      const specPath = join(
+        this.config.resolvedPaths.backend,
+        this.config.services.backend.apiSpec.path
+      );
+
+      try {
+        const { copyFileSync } = await import('fs');
+        copyFileSync(specPath, clientSwaggerPath);
+        console.log(chalk.dim('Copied swagger.json to client directory'));
+      } catch (error) {
+        console.error(chalk.red('Failed to copy swagger.json:'), error);
+      }
     }
 
     // Implementation depends on generator type
@@ -399,12 +430,29 @@ export class DevSyncEngine extends EventEmitter {
   private getWatchPaths(): string[] {
     const paths: string[] = [];
 
-    // Watch API spec file
-    const specPath = join(
-      this.config.resolvedPaths.backend,
-      this.config.services.backend.apiSpec.path
-    );
-    paths.push(specPath);
+    // Handle runtime API specs (e.g., FastAPI)
+    if (this.config.services.backend.apiSpec.path.startsWith('runtime:')) {
+      // For runtime specs, watch Python source files
+      const pythonPatterns = [
+        '**/*.py',
+        '!**/__pycache__/**',
+        '!**/venv/**',
+        '!**/.venv/**',
+        '!**/env/**',
+        '!**/.env/**',
+      ];
+      
+      for (const pattern of pythonPatterns) {
+        paths.push(join(this.config.resolvedPaths.backend, pattern));
+      }
+    } else {
+      // Watch static API spec file
+      const specPath = join(
+        this.config.resolvedPaths.backend,
+        this.config.services.backend.apiSpec.path
+      );
+      paths.push(specPath);
+    }
 
     // Watch additional paths if specified
     if (this.config.services.backend.apiSpec.watch) {
