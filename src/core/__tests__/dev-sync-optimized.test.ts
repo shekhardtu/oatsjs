@@ -137,21 +137,21 @@ describe('DevSyncEngine', () => {
           },
         },
       };
-      
+
       const devSyncWithPolling = new DevSyncEngine(runtimeConfig);
       const setIntervalSpy = jest.spyOn(global, 'setInterval');
-      
+
       await devSyncWithPolling.start();
-      
+
       // Should not use file watching for runtime specs
       expect(mockChokidar.watch).not.toHaveBeenCalled();
-      
+
       // Should set up polling interval
       expect(setIntervalSpy).toHaveBeenCalledWith(
         expect.any(Function),
         5000 // Default polling interval
       );
-      
+
       setIntervalSpy.mockRestore();
     });
 
@@ -173,17 +173,17 @@ describe('DevSyncEngine', () => {
           },
         },
       };
-      
+
       const devSyncWithPolling = new DevSyncEngine(runtimeConfig);
       const setIntervalSpy = jest.spyOn(global, 'setInterval');
-      
+
       await devSyncWithPolling.start();
-      
+
       expect(setIntervalSpy).toHaveBeenCalledWith(
         expect.any(Function),
         3000 // Custom polling interval
       );
-      
+
       setIntervalSpy.mockRestore();
     });
 
@@ -558,7 +558,7 @@ describe('DevSyncEngine', () => {
 
       // Trigger second sync with same spec
       await (devSyncWithPolling as any).performSync();
-      
+
       // Should not generate again if hash is the same
       expect(generateClientSpy).toHaveBeenCalledTimes(1);
     });
@@ -671,27 +671,21 @@ describe('DevSyncEngine', () => {
 
     it('should not log step durations when showStepDurations is disabled', async () => {
       const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-      
+
       // Mock the internal methods
       jest
         .spyOn(devSync as any, 'checkForMeaningfulChanges')
         .mockResolvedValue(true);
-      jest
-        .spyOn(devSync as any, 'generateClient')
-        .mockResolvedValue(undefined);
-      jest
-        .spyOn(devSync as any, 'buildClient')
-        .mockResolvedValue(undefined);
-      jest
-        .spyOn(devSync as any, 'linkPackages')
-        .mockResolvedValue(undefined);
+      jest.spyOn(devSync as any, 'generateClient').mockResolvedValue(undefined);
+      jest.spyOn(devSync as any, 'buildClient').mockResolvedValue(undefined);
+      jest.spyOn(devSync as any, 'linkPackages').mockResolvedValue(undefined);
 
       await devSync.start();
       await (devSync as any).performSync();
 
       // Should not log timing information
-      const timingLogs = consoleLogSpy.mock.calls.filter(
-        (call) => call[0]?.includes('⏱️')
+      const timingLogs = consoleLogSpy.mock.calls.filter((call) =>
+        call[0]?.includes('⏱️')
       );
       expect(timingLogs).toHaveLength(0);
 
@@ -728,7 +722,7 @@ describe('DevSyncEngine', () => {
 
       const devSyncCustom = new DevSyncEngine(configWithCustomSpec);
       const writeFileSyncSpy = jest.fn();
-      
+
       // Mock fs module
       jest.doMock('fs', () => ({
         ...jest.requireActual('fs'),
