@@ -58,18 +58,29 @@ describe('DevSyncOrchestrator', () => {
   };
 
   beforeEach(() => {
-    orchestrator = new DevSyncOrchestrator(defaultConfig as any);
+    jest.clearAllMocks();
 
+    // Create mock child process
     mockProcess = new EventEmitter();
     mockProcess.stdout = new EventEmitter();
     mockProcess.stderr = new EventEmitter();
     mockProcess.kill = jest.fn();
     mockProcess.killed = false;
 
-    mockExeca.mockReturnValue(mockProcess);
+    // Setup execa mock to return mock process
+    mockExeca.mockImplementation(() => mockProcess as any);
 
     // Mock detect-port to return available ports by default
     mockDetectPort.mockImplementation(async (port: number) => port);
+
+    // Mock execAsync for OS-level port checks
+    jest.mock('child_process', () => ({
+      exec: jest.fn((_cmd: string, cb: (err: any, stdout: string) => void) => {
+        cb(null, ''); // Return empty stdout (port is free)
+      }),
+    }));
+
+    orchestrator = new DevSyncOrchestrator(defaultConfig as any);
   });
 
   afterEach(() => {
@@ -78,18 +89,9 @@ describe('DevSyncOrchestrator', () => {
 
   describe('start', () => {
     it('should start backend service successfully', async () => {
-      // Mock port as in use to trigger port-based detection
-      mockDetectPort.mockImplementation(async (port: number) => {
-        // First call returns port is free, subsequent calls show port in use
-        if (mockDetectPort.mock.calls.length <= 1) {
-          return port; // Port is free
-        }
-        return port + 1; // Port is now in use
-      });
-
       const startPromise = orchestrator.start();
 
-      // Wait for initial port check and service start
+      // Wait for services to start
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(mockExeca).toHaveBeenCalledWith(
@@ -103,19 +105,33 @@ describe('DevSyncOrchestrator', () => {
         })
       );
 
-      // Wait for port detection interval to fire
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      // Emit ready pattern from backend
+      mockProcess.stdout.emit(
+        'data',
+        Buffer.from('Server listening on port 4000')
+      );
 
       await startPromise;
+
+      // Verify sync engine was started
+      const { DevSyncEngine } = jest.requireMock('../dev-sync-optimized');
+      expect(DevSyncEngine).toHaveBeenCalled();
+
+      const mockSyncInstance = DevSyncEngine.mock.results[0].value;
+      expect(mockSyncInstance.start).toHaveBeenCalled();
     }, 10000);
 
     it('should handle service startup failure', async () => {
-      // Simulate service failure
-      setTimeout(() => {
-        mockProcess.emit('exit', 1);
-      }, 10);
+      const startPromise = orchestrator.start();
 
-      await expect(orchestrator.start()).rejects.toThrow();
+      // Wait a bit then simulate service failure
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Emit error and exit
+      mockProcess.emit('error', new Error('Failed to start'));
+      mockProcess.emit('exit', 1);
+
+      await expect(startPromise).rejects.toThrow('Failed to start');
     }, 10000);
 
     it('should pass environment variables to services', async () => {
@@ -148,8 +164,8 @@ describe('DevSyncOrchestrator', () => {
 
       const startPromise = orchestrator.start();
 
-      // Wait for port detection
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      // Wait for service start
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(mockExeca).toHaveBeenCalledWith(
         'npm run dev',
@@ -162,25 +178,23 @@ describe('DevSyncOrchestrator', () => {
         })
       );
 
+      // Emit ready pattern to complete startup
+      mockProcess.stdout.emit('data', Buffer.from('Server listening on'));
+
       await startPromise;
     }, 10000);
   });
 
   describe('stop', () => {
     it('should stop all running services', async () => {
-      // Mock port detection
-      mockDetectPort.mockImplementation(async (port: number) => {
-        if (mockDetectPort.mock.calls.length <= 1) {
-          return port;
-        }
-        return port + 1;
-      });
-
       // Start services first
       const startPromise = orchestrator.start();
 
-      // Wait for port detection
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      // Wait for service start
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Emit ready pattern
+      mockProcess.stdout.emit('data', Buffer.from('Server listening on'));
 
       await startPromise;
 
@@ -203,18 +217,13 @@ describe('DevSyncOrchestrator', () => {
     });
 
     it('should include service details in status', async () => {
-      // Mock port detection
-      mockDetectPort.mockImplementation(async (port: number) => {
-        if (mockDetectPort.mock.calls.length <= 1) {
-          return port;
-        }
-        return port + 1;
-      });
-
       const startPromise = orchestrator.start();
 
-      // Wait for port detection
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      // Wait for service start
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Emit ready pattern
+      mockProcess.stdout.emit('data', Buffer.from('Server listening on'));
 
       await startPromise;
 
@@ -231,18 +240,13 @@ describe('DevSyncOrchestrator', () => {
       const eventSpy = jest.fn();
       orchestrator.on('ready', eventSpy);
 
-      // Mock port detection
-      mockDetectPort.mockImplementation(async (port: number) => {
-        if (mockDetectPort.mock.calls.length <= 1) {
-          return port;
-        }
-        return port + 1;
-      });
-
       const startPromise = orchestrator.start();
 
-      // Wait for port detection
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      // Wait for service start
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Emit ready pattern
+      mockProcess.stdout.emit('data', Buffer.from('Server listening on'));
 
       await startPromise;
 
@@ -254,22 +258,17 @@ describe('DevSyncOrchestrator', () => {
       orchestrator.on('service-error', errorSpy);
 
       // First start successfully
-      // Mock port detection
-      mockDetectPort.mockImplementation(async (port: number) => {
-        if (mockDetectPort.mock.calls.length <= 1) {
-          return port;
-        }
-        return port + 1;
-      });
-
       const startPromise = orchestrator.start();
 
-      // Wait for port detection and service to be marked as ready
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      // Wait for service start
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Emit ready pattern
+      mockProcess.stdout.emit('data', Buffer.from('Server listening on'));
 
       await startPromise;
 
-      // Then simulate crash
+      // Then simulate crash after service was running
       mockProcess.emit('exit', 1);
 
       // Wait for event to be emitted
