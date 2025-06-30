@@ -112,6 +112,15 @@ export class DevSyncOrchestrator extends EventEmitter {
 
       console.log(chalk.green('✅ All services started successfully'));
 
+      // Wait a bit for backend to be fully ready if using runtime spec
+      if (
+        this.syncEngine &&
+        this.config.services.backend.apiSpec.path.startsWith('/')
+      ) {
+        console.log(chalk.dim('⏳ Waiting for backend API to be ready...'));
+        await new Promise((resolve) => setTimeout(resolve, 3000)); // 3 second delay
+      }
+
       // Start sync engine after services are running
       if (this.syncEngine) {
         console.log(chalk.blue('🔄 Starting file watcher for API sync...'));
@@ -409,25 +418,37 @@ export class DevSyncOrchestrator extends EventEmitter {
    * Check if a port is in use
    */
   private async isPortInUse(port: number): Promise<boolean> {
+    // First try direct OS-level check for more reliable results
     try {
-      const availablePort = await detectPort(port);
-      return availablePort !== port;
-    } catch (error) {
-      // If detectPort fails, fallback to checking with lsof/netstat
-      try {
-        if (process.platform === 'darwin' || process.platform === 'linux') {
-          const { stdout } = await execAsync(`lsof -i :${port} -t`);
-          return stdout.trim() !== '';
-        } else if (process.platform === 'win32') {
-          const { stdout } = await execAsync(`netstat -an | findstr :${port}`);
-          return stdout.includes('LISTENING');
+      if (process.platform === 'darwin' || process.platform === 'linux') {
+        const { stdout } = await execAsync(`lsof -i :${port} -t 2>/dev/null`);
+        const inUse = stdout.trim() !== '';
+        if (this.config.log?.level === 'debug') {
+          console.log(chalk.dim(`Port ${port}: ${inUse ? 'IN USE' : 'FREE'}`));
         }
-      } catch {
-        // Command failed, assume port is free
+        return inUse;
+      } else if (process.platform === 'win32') {
+        const { stdout } = await execAsync(`netstat -an | findstr :${port}`);
+        const inUse = stdout.includes('LISTENING');
+        if (this.config.log?.level === 'debug') {
+          console.log(chalk.dim(`Port ${port}: ${inUse ? 'IN USE' : 'FREE'}`));
+        }
+        return inUse;
+      }
+    } catch (error) {
+      // If OS-level check fails, try detectPort as fallback
+      try {
+        const availablePort = await detectPort(port);
+        const inUse = availablePort !== port;
+        return inUse;
+      } catch (detectError) {
+        // Both methods failed, assume port is free
         return false;
       }
-      return false;
     }
+
+    // Default fallback
+    return false;
   }
 
   /**
@@ -444,30 +465,36 @@ export class DevSyncOrchestrator extends EventEmitter {
         chalk.yellow(`⚠️  Port ${port} is already in use for ${serviceName}`)
       );
 
+      // Check if we should auto-kill processes (default: true for better DX)
+      const autoKill = this.config.sync?.autoKillConflictingPorts !== false;
+
+      if (!autoKill) {
+        throw new ServiceStartError(
+          serviceName,
+          `Port ${port} is already in use. Please free the port manually or set sync.autoKillConflictingPorts to true`,
+          -1
+        );
+      }
+
       try {
         if (process.platform === 'darwin' || process.platform === 'linux') {
           // Get PIDs of processes using the port
-          const { stdout } = await execAsync(`lsof -i :${port} -t`);
+          const { stdout } = await execAsync(
+            `lsof -i :${port} -t 2>/dev/null || true`
+          );
           const pids = stdout
             .trim()
             .split('\n')
-            .filter((pid) => pid);
+            .filter((pid) => pid && /^\d+$/.test(pid));
 
           if (pids.length > 0) {
+            console.log(chalk.yellow(`🔄 Attempting to free port ${port}...`));
+
             for (const pid of pids) {
-              if (pid) {
-                console.log(
-                  chalk.yellow(
-                    `🔪 Killing process ${pid} using port ${port}...`
-                  )
-                );
-                try {
-                  await execAsync(`kill -9 ${pid}`);
-                } catch (err) {
-                  console.warn(
-                    chalk.yellow(`⚠️  Could not kill process ${pid}: ${err}`)
-                  );
-                }
+              try {
+                await execAsync(`kill -9 ${pid}`);
+              } catch (err) {
+                // Process might have already exited
               }
             }
 

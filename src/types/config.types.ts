@@ -377,6 +377,24 @@ export interface SyncConfig {
    * @example ["test/**", "spec/**"]
    */
   ignore?: string[];
+
+  /**
+   * Whether to automatically kill processes using conflicting ports
+   * @default true
+   */
+  autoKillConflictingPorts?: boolean;
+
+  /**
+   * Whether to show duration for each sync step
+   * @default false
+   */
+  showStepDurations?: boolean;
+
+  /**
+   * Polling interval in milliseconds for runtime API specs
+   * @default 5000
+   */
+  pollingInterval?: number;
 }
 
 /**

@@ -6,6 +6,21 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/node/v/oatsjs.svg)](https://nodejs.org)
 
+## 🔥 Features
+
+- **🔄 Real-time Sync**: Automatically syncs OpenAPI changes to TypeScript clients
+- **🚀 Zero Manual Steps**: No more copy-paste workflows
+- **🔌 Port Conflict Resolution**: Automatically frees up ports when needed
+- **📦 Multiple Generators**: Support for any OpenAPI TypeScript generator
+- **🛠️ Smart Defaults**: Minimal configuration required
+- **📊 Intelligent Watching**: Only rebuilds when necessary
+- **🔗 Auto-linking**: Seamlessly links packages in monorepos
+- **🎯 Framework Agnostic**: Works with React, Vue, Angular, etc.
+- **⚡ 45% Faster Sync**: Optimized performance with incremental builds
+- **🔍 Smart Polling**: Efficient polling for runtime-generated API specs
+- **🧠 Hash-based Caching**: Skip unnecessary regeneration with SHA-256 comparison
+- **📈 Performance Tracking**: Optional timing display for each sync step
+
 ## 🎯 The Problem
 
 You're building a TypeScript full-stack app with:
@@ -73,20 +88,39 @@ Create `oats.config.json` in your project root:
 {
   "services": {
     "backend": {
-      "path": "../my-backend",        // Path to your backend
-      "port": 4000,                   // Backend port (optional)
-      "startCommand": "yarn dev",     // Command to start backend
+      "path": "./backend",
+      "port": 8000,
+      "startCommand": "npm run dev",
       "apiSpec": {
-        "path": "src/swagger.json"    // Path to OpenAPI spec (relative to backend)
+        "path": "/api/openapi.json"  // Runtime endpoint (recommended)
       }
     },
     "client": {
-      "path": "../my-api-client",     // Path to TypeScript client
-      "packageName": "@myorg/api-client",
-      "generator": "custom",          // Use your existing generator
-      "generateCommand": "yarn generate",
-      "buildCommand": "yarn build",
-      "linkCommand": "yarn link"
+      "path": "./api-client",
+      "generator": "@hey-api/openapi-ts",
+      "packageName": "@myorg/api-client"
+    },
+    "frontend": {
+      "path": "./frontend",
+      "port": 3000,
+      "startCommand": "npm run dev"
+    }
+  }
+}
+```
+
+**Minimal config example** (OATS uses smart defaults for everything else):
+```json
+{
+  "services": {
+    "backend": {
+      "path": "./backend",
+      "startCommand": "npm run dev",
+      "apiSpec": { "path": "/api/openapi.json" }
+    },
+    "client": {
+      "path": "./api-client",
+      "generator": "@hey-api/openapi-ts"
     }
   }
 }
@@ -224,10 +258,41 @@ Works with any OpenAPI client generator:
 }
 ```
 
+### Port Conflict Handling
+
+OATS automatically handles port conflicts by default. When a port is already in use:
+1. Detects the conflicting process
+2. Kills the process to free the port
+3. Starts your service on the freed port
+
+To disable automatic port killing:
+```json
+{
+  "sync": {
+    "autoKillConflictingPorts": false  // Default: true
+  }
+}
+```
+
+### Performance Options
+
+Enable performance tracking and optimizations:
+```json
+{
+  "sync": {
+    "showStepDurations": true,    // Show timing for each sync step
+    "pollingInterval": 3000       // Polling interval for runtime specs (ms)
+  }
+}
+```
+
+- **showStepDurations**: Display how long each step takes (detection, generation, build, linking)
+- **pollingInterval**: For runtime API specs (like FastAPI), how often to check for changes (default: 5000ms)
+
 ### Python Backend Notes
 
 For Python backends like FastAPI that generate OpenAPI specs at runtime:
-- Use `"runtime:/path/to/spec"` format for the API spec path
+- Use runtime endpoints for the API spec path (recommended)
 - OATSJS will fetch the spec from the running server
 - Make sure your backend is configured to expose the OpenAPI spec
 
@@ -235,7 +300,7 @@ Example for FastAPI:
 ```json
 {
   "apiSpec": {
-    "path": "runtime:/openapi.json"  // Fetched from http://localhost:8000/openapi.json
+    "path": "/openapi.json"  // Fetched from http://localhost:8000/openapi.json
   }
 }
 ```

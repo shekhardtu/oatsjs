@@ -5,6 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-06-30
+
+### Added
+- **Polling-based sync for runtime API specs**: New intelligent polling mechanism for FastAPI and other runtime-generated OpenAPI specs
+- **Smart hash comparison**: Uses SHA-256 hash comparison to avoid unnecessary regeneration
+- **Configurable polling interval**: New `sync.pollingInterval` option (default 5 seconds) for runtime specs
+- **Performance tracking**: New `sync.showStepDurations` option to display timing for each sync step
+- **Incremental TypeScript compilation**: Added incremental build support for faster client compilation
+- **Spec-based caching**: Stores spec hash to skip regeneration when spec hasn't changed
+- **Flexible spec naming**: Support for custom OpenAPI spec filenames (not just swagger.json)
+- **getCurrentHash() method**: Added to SwaggerChangeDetector for hash retrieval
+
+### Changed
+- **45% faster sync time**: Reduced from ~3.4s to ~1.8s for changed specs through optimizations
+- **No file watching for runtime specs**: Eliminated watching Python files and "too many open files" errors
+- **Smarter initial sync**: Fixed duplicate syncs on startup
+- **Better retry logic**: Improved retry mechanism for fetching runtime specs with configurable delays
+
+### Fixed
+- Fixed excessive file watching that caused "EMFILE: too many open files" errors
+- Fixed always syncing issue for runtime specs by properly using hash comparison
+- Fixed runtime spec detection to support both `runtime:` prefix and `/` paths
+- Fixed spec filename handling to support any OpenAPI spec filename
+
+### Performance
+- Client build time reduced by 64% when using incremental compilation
+- Near-instant sync when no API changes detected (hash comparison)
+- Eliminated unnecessary file system operations for runtime specs
+
+## [2.1.16] - 2025-06-30
+
+### Added
+- **Automatic port conflict resolution**: OATS now automatically detects and kills processes using conflicting ports before starting services
+- **Enhanced port detection**: Prioritizes OS-level tools (lsof/netstat) over third-party libraries for more reliable port checking
+- **Binary permission fix**: Added automatic executable permissions to the CLI binary during build
+- **Configurable port handling**: New `sync.autoKillConflictingPorts` option to control automatic port killing behavior
+- **Cleaner logging**: Verbose port checking logs now only show in debug mode
+
+### Fixed
+- Fixed "Permission denied" error when running oatsjs command after npm/yarn global installation
+- Fixed port detection reliability issues on macOS/Linux by using lsof command directly
+- Fixed binary execution issues by adding proper bin wrapper script
+- Fixed Windows compatibility for port detection and process killing
+
+### Changed
+- **Simplified configuration**: Default oats.config.json now uses minimal settings with smart defaults
+- Build process now automatically sets executable permissions on the CLI binary
+- Port conflict handling now kills existing processes by default (can be disabled)
+- Improved error messages during service startup failures
+- Updated templates to use runtime API endpoints instead of file paths (recommended approach)
+
 ## [2.1.11] - 2025-06-29
 
 ### Added

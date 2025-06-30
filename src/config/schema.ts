@@ -56,20 +56,25 @@ export const configSchema = Joi.object<OatsConfig>({
         'string.empty': 'Backend path cannot be empty',
         'any.required': 'Backend path is required',
       }),
-      port: Joi.number().port().optional().when('runtime', {
-        is: 'python',
-        then: Joi.number().default(8000),
-        otherwise: Joi.number().default(4000),
-      }),
+      port: Joi.number()
+        .port()
+        .optional()
+        .when('runtime', {
+          is: 'python',
+          then: Joi.number().default(8000),
+          otherwise: Joi.number().default(4000),
+        }),
       startCommand: Joi.string().required().messages({
         'string.empty': 'Backend start command cannot be empty',
         'any.required': 'Backend start command is required',
       }),
-      readyPattern: Joi.string().optional().when('runtime', {
-        is: 'python',
-        then: Joi.string().default('Uvicorn running on'),
-        otherwise: Joi.string().default('Server listening on'),
-      }),
+      readyPattern: Joi.string()
+        .optional()
+        .when('runtime', {
+          is: 'python',
+          then: Joi.string().default('Uvicorn running on'),
+          otherwise: Joi.string().default('Server listening on'),
+        }),
       runtime: Joi.string().valid('node', 'python').optional().default('node'),
       python: Joi.when('runtime', {
         is: 'python',
@@ -138,11 +143,13 @@ export const configSchema = Joi.object<OatsConfig>({
       port: Joi.number().port().required().messages({
         'number.base': 'Frontend port must be a number',
         'number.port': 'Frontend port must be a valid port number (1-65535)',
-        'any.required': 'Frontend port is required - specify the exact port your dev server uses (e.g., 3000 for React, 5173 for Vite, 4200 for Angular)',
+        'any.required':
+          'Frontend port is required - specify the exact port your dev server uses (e.g., 3000 for React, 5173 for Vite, 4200 for Angular)',
       }),
       startCommand: Joi.string().required().messages({
         'string.empty': 'Frontend start command cannot be empty',
-        'any.required': 'Frontend start command is required (e.g., "npm start" for React, "npm run dev" for Vite, "ng serve" for Angular)',
+        'any.required':
+          'Frontend start command is required (e.g., "npm start" for React, "npm run dev" for Vite, "ng serve" for Angular)',
       }),
       packageLinkCommand: Joi.string().optional(),
       framework: Joi.string()
@@ -174,6 +181,9 @@ export const configSchema = Joi.object<OatsConfig>({
     retryDelayMs: Joi.number().min(0).optional().default(2000),
     runInitialGeneration: Joi.boolean().optional().default(false),
     ignore: Joi.array().items(Joi.string()).optional(),
+    autoKillConflictingPorts: Joi.boolean().optional().default(true),
+    showStepDurations: Joi.boolean().optional().default(false),
+    pollingInterval: Joi.number().min(1000).max(60000).optional().default(5000),
   })
     .optional()
     .default({}),
