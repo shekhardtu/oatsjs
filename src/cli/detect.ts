@@ -418,13 +418,20 @@ function displayDetectedStructure(structure: ProjectStructure): void {
     console.log(
       chalk.cyan('  🖥️  Backend:'),
       chalk.green(structure.backend.path),
-      chalk.dim(`(${structure.backend.framework}${structure.backend.runtime === 'python' ? ' - Python' : ''})`)
+      chalk.dim(
+        `(${structure.backend.framework}${structure.backend.runtime === 'python' ? ' - Python' : ''})`
+      )
     );
     if (structure.backend.apiSpec) {
       console.log(chalk.dim(`     API Spec: ${structure.backend.apiSpec}`));
     }
-    if (structure.backend.runtime === 'python' && structure.backend.virtualEnv) {
-      console.log(chalk.dim(`     Virtual Env: ${structure.backend.virtualEnv}`));
+    if (
+      structure.backend.runtime === 'python' &&
+      structure.backend.virtualEnv
+    ) {
+      console.log(
+        chalk.dim(`     Virtual Env: ${structure.backend.virtualEnv}`)
+      );
     }
   }
 
@@ -547,9 +554,15 @@ async function detectPythonFramework(dir: string): Promise<string | null> {
 async function detectPythonPackageManager(
   dir: string
 ): Promise<'pip' | 'poetry' | 'pipenv'> {
-  if (existsSync(join(dir, 'poetry.lock')) || existsSync(join(dir, 'pyproject.toml'))) {
-    const hasPoetry = existsSync(join(dir, 'pyproject.toml')) && 
-      readFileSync(join(dir, 'pyproject.toml'), 'utf-8').includes('[tool.poetry]');
+  if (
+    existsSync(join(dir, 'poetry.lock')) ||
+    existsSync(join(dir, 'pyproject.toml'))
+  ) {
+    const hasPoetry =
+      existsSync(join(dir, 'pyproject.toml')) &&
+      readFileSync(join(dir, 'pyproject.toml'), 'utf-8').includes(
+        '[tool.poetry]'
+      );
     if (hasPoetry) return 'poetry';
   }
   if (existsSync(join(dir, 'Pipfile.lock'))) return 'pipenv';
@@ -561,13 +574,13 @@ async function detectPythonPackageManager(
  */
 async function detectVirtualEnv(dir: string): Promise<string | undefined> {
   const venvDirs = ['venv', '.venv', 'env', '.env', 'virtualenv'];
-  
+
   for (const venvDir of venvDirs) {
     if (existsSync(join(dir, venvDir))) {
       return venvDir;
     }
   }
-  
+
   return undefined;
 }
 
@@ -594,7 +607,7 @@ async function findPythonApiSpec(dir: string): Promise<string | undefined> {
 
   // For FastAPI, the spec is usually generated at runtime
   // We'll use a special marker
-  if (await detectPythonFramework(dir) === 'FastAPI') {
+  if ((await detectPythonFramework(dir)) === 'FastAPI') {
     return 'runtime:/docs/openapi.json';
   }
 
@@ -604,7 +617,10 @@ async function findPythonApiSpec(dir: string): Promise<string | undefined> {
 /**
  * Detect Python backend port
  */
-async function detectPythonPort(dir: string, framework: string): Promise<number> {
+async function detectPythonPort(
+  dir: string,
+  framework: string
+): Promise<number> {
   // Check common files for port configuration
   const filesToCheck = [
     'main.py',
@@ -619,7 +635,7 @@ async function detectPythonPort(dir: string, framework: string): Promise<number>
   for (const file of filesToCheck) {
     if (existsSync(join(dir, file))) {
       const content = readFileSync(join(dir, file), 'utf-8');
-      
+
       // Look for port patterns
       const portPatterns = [
         /port\s*=\s*(\d{4,5})/i,
@@ -664,10 +680,16 @@ function generateConfigFromStructure(structure: ProjectStructure): OatsConfig {
     services: {
       backend: {
         path: structure.backend.path,
-        port: structure.backend.port || (structure.backend.runtime === 'python' ? 8000 : 4000),
+        port:
+          structure.backend.port ||
+          (structure.backend.runtime === 'python' ? 8000 : 4000),
         startCommand: getStartCommand(structure.backend),
         apiSpec: {
-          path: structure.backend.apiSpec || (structure.backend.runtime === 'python' ? 'docs/openapi.json' : 'src/swagger.json'),
+          path:
+            structure.backend.apiSpec ||
+            (structure.backend.runtime === 'python'
+              ? 'docs/openapi.json'
+              : 'src/swagger.json'),
         },
       },
       client: {

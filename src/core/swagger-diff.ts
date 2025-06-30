@@ -31,12 +31,14 @@ export interface ChangeDetectionResult {
 export class SwaggerChangeDetector {
   private lastState: string | null = null;
   private lastSpec: any = null;
+  private currentState: string | null = null;
 
   /**
    * Check if API specification has significant changes
    */
   hasSignificantChanges(currentSpec: any): boolean {
     const currentState = this.calculateSpecHash(currentSpec);
+    this.currentState = currentState;
 
     if (this.lastState === null) {
       // First time, consider it a change
@@ -59,6 +61,13 @@ export class SwaggerChangeDetector {
 
     // Consider changes significant if they affect the API contract
     return this.areChangesSignificant(changes);
+  }
+
+  /**
+   * Get the current spec hash
+   */
+  getCurrentHash(): string | null {
+    return this.currentState;
   }
 
   /**

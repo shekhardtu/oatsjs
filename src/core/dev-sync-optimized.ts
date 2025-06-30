@@ -8,7 +8,7 @@
 
 import { EventEmitter } from 'events';
 import { existsSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { join, basename } from 'path';
 
 import chalk from 'chalk';
 import { watch } from 'chokidar';
@@ -45,6 +45,8 @@ export class DevSyncEngine extends EventEmitter {
   private syncLock = false;
   private syncRetries = 0;
   private readonly MAX_SYNC_RETRIES = 3;
+  private pollingInterval?: NodeJS.Timeout;
+  private lastGeneratedSpecHash?: string;
 
   constructor(config: RuntimeConfig) {
     super();
@@ -64,43 +66,66 @@ export class DevSyncEngine extends EventEmitter {
   async start(): Promise<void> {
     if (this.isRunning) return;
 
-    console.log(chalk.blue('👁️  Starting file watcher...'));
+    const isRuntimeSpec =
+      this.config.services.backend.apiSpec.path.startsWith('runtime:') ||
+      this.config.services.backend.apiSpec.path.startsWith('/');
 
-    try {
-      const watchPaths = this.getWatchPaths();
-      const ignored = this.config.sync.ignore || [
-        '**/node_modules/**',
-        '**/.git/**',
-      ];
+    if (isRuntimeSpec) {
+      // For runtime specs, use polling instead of file watching
+      console.log(chalk.blue('👁️  Starting OpenAPI spec polling...'));
 
-      this.watcher = watch(watchPaths, {
-        ignored,
-        persistent: true,
-        ignoreInitial: false,
-        awaitWriteFinish: {
-          stabilityThreshold: 300,
-          pollInterval: 100,
-        },
-      });
+      const pollIntervalMs = this.config.sync.pollingInterval || 5000; // Default 5 seconds
+      console.log(chalk.dim(`📊 Polling interval: ${pollIntervalMs}ms`));
 
-      this.watcher.on('change', this.handleFileChange.bind(this));
-      this.watcher.on('add', this.handleFileChange.bind(this));
-      this.watcher.on('error', this.handleWatchError.bind(this));
+      // Start polling
+      this.pollingInterval = setInterval(() => {
+        this.debouncedSync();
+      }, pollIntervalMs);
 
       this.isRunning = true;
-      console.log(chalk.green('✅ File watcher started'));
+      console.log(chalk.green('✅ OpenAPI spec polling started'));
+    } else {
+      // For static specs, use file watching
+      console.log(chalk.blue('👁️  Starting file watcher...'));
 
-      // Run initial sync if configured
-      if (this.config.sync.runInitialGeneration) {
-        console.log(chalk.blue('🔄 Running initial sync...'));
-        await this.performSync();
+      try {
+        const watchPaths = this.getWatchPaths();
+        console.log(chalk.dim('📂 Watching paths:'), watchPaths);
+
+        const ignored = this.config.sync.ignore || [
+          '**/node_modules/**',
+          '**/.git/**',
+        ];
+
+        this.watcher = watch(watchPaths, {
+          ignored,
+          persistent: true,
+          ignoreInitial: true,
+          awaitWriteFinish: {
+            stabilityThreshold: 300,
+            pollInterval: 100,
+          },
+        });
+
+        this.watcher.on('change', this.handleFileChange.bind(this));
+        this.watcher.on('add', this.handleFileChange.bind(this));
+        this.watcher.on('error', this.handleWatchError.bind(this));
+
+        this.isRunning = true;
+        console.log(chalk.green('✅ File watcher started'));
+      } catch (error) {
+        console.error(chalk.red('❌ Failed to start file watcher:'), error);
+        throw error;
       }
-
-      this.emit('started');
-    } catch (error) {
-      console.error(chalk.red('❌ Failed to start file watcher:'), error);
-      throw error;
     }
+
+    // Run initial sync if configured
+    if (this.config.sync.runInitialGeneration) {
+      console.log(chalk.blue('🔄 Running initial sync...'));
+      await this.performSync();
+    }
+
+    this.emit('started');
   }
 
   /**
@@ -109,15 +134,20 @@ export class DevSyncEngine extends EventEmitter {
   async stop(): Promise<void> {
     if (!this.isRunning) return;
 
-    console.log(chalk.yellow('🔄 Stopping file watcher...'));
+    console.log(chalk.yellow('🔄 Stopping sync engine...'));
 
     if (this.watcher) {
       await this.watcher.close();
       this.watcher = undefined;
     }
 
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = undefined;
+    }
+
     this.isRunning = false;
-    console.log(chalk.green('✅ File watcher stopped'));
+    console.log(chalk.green('✅ Sync engine stopped'));
     this.emit('stopped');
   }
 
@@ -143,11 +173,16 @@ export class DevSyncEngine extends EventEmitter {
     console.log(chalk.gray(`📝 File changed: ${filePath}`));
 
     // Check if this is an API spec file or related file
-    if (this.isRelevantFile(filePath)) {
+    const isRelevant = this.isRelevantFile(filePath);
+    console.log(chalk.dim(`   Is relevant: ${isRelevant}`));
+
+    if (isRelevant) {
       console.log(
         chalk.blue('🔄 API-related file changed, scheduling sync...')
       );
       this.debouncedSync();
+    } else {
+      console.log(chalk.dim('   Ignoring non-relevant file'));
     }
   }
 
@@ -170,6 +205,8 @@ export class DevSyncEngine extends EventEmitter {
     }
 
     this.syncLock = true;
+    const showDurations = this.config.sync.showStepDurations ?? false;
+    const syncStartTime = Date.now();
 
     try {
       const event: SyncEvent = {
@@ -181,28 +218,63 @@ export class DevSyncEngine extends EventEmitter {
       console.log(chalk.blue('🔄 Synchronizing API changes...'));
 
       // Check if API spec has meaningful changes
+      const checkStartTime = Date.now();
       const hasChanges = await this.checkForMeaningfulChanges();
+      if (showDurations) {
+        console.log(
+          chalk.dim(`  ⏱️  Change detection: ${Date.now() - checkStartTime}ms`)
+        );
+      }
+
       if (!hasChanges && this.config.sync.strategy === 'smart') {
         console.log(chalk.gray('📊 No meaningful API changes detected'));
         return;
       }
 
       // Generate TypeScript client
+      const genStartTime = Date.now();
       await this.generateClient();
+      if (showDurations) {
+        console.log(
+          chalk.dim(`  ⏱️  Client generation: ${Date.now() - genStartTime}ms`)
+        );
+      }
 
       // Build client if needed
       if (this.config.services.client.buildCommand) {
+        const buildStartTime = Date.now();
         await this.buildClient();
+        if (showDurations) {
+          console.log(
+            chalk.dim(`  ⏱️  Client build: ${Date.now() - buildStartTime}ms`)
+          );
+        }
       }
 
       // Link packages if auto-link is enabled
       if (this.config.sync.autoLink) {
+        const linkStartTime = Date.now();
         await this.linkPackages();
+        if (showDurations) {
+          console.log(
+            chalk.dim(`  ⏱️  Package linking: ${Date.now() - linkStartTime}ms`)
+          );
+        }
       }
 
       this.lastSyncTime = new Date();
       this.syncRetries = 0; // Reset retry count on success
-      console.log(chalk.green('✅ Synchronization completed successfully'));
+
+      if (showDurations) {
+        const totalDuration = Date.now() - syncStartTime;
+        console.log(
+          chalk.green(
+            `✅ Synchronization completed successfully (${totalDuration}ms total)`
+          )
+        );
+      } else {
+        console.log(chalk.green('✅ Synchronization completed successfully'));
+      }
 
       const completedEvent: SyncEvent = {
         type: 'generation-completed',
@@ -250,12 +322,54 @@ export class DevSyncEngine extends EventEmitter {
    */
   private async checkForMeaningfulChanges(): Promise<boolean> {
     // Handle runtime API specs (e.g., FastAPI)
-    if (this.config.services.backend.apiSpec.path.startsWith('runtime:')) {
-      // For runtime specs, we always assume there might be changes
-      // since FastAPI generates specs dynamically
-      return true;
+    const isRuntimeSpec =
+      this.config.services.backend.apiSpec.path.startsWith('runtime:') ||
+      this.config.services.backend.apiSpec.path.startsWith('/');
+
+    if (isRuntimeSpec) {
+      // For runtime specs, fetch from endpoint and compare
+      const runtimePath = this.config.services.backend.apiSpec.path.replace(
+        'runtime:',
+        ''
+      );
+      const apiUrl = `http://localhost:${this.config.services.backend.port}${runtimePath}`;
+
+      try {
+        const response = await fetch(apiUrl, {
+          signal: AbortSignal.timeout(5000), // 5 second timeout
+        });
+
+        if (!response.ok) {
+          console.warn(
+            chalk.yellow(
+              `Failed to fetch spec for comparison: ${response.statusText}`
+            )
+          );
+          // If we can't fetch the spec, assume it might have changed
+          return true;
+        }
+
+        const currentSpec = await response.json();
+        const hasChanges =
+          this.changeDetector.hasSignificantChanges(currentSpec);
+
+        // Store the current spec hash if we're going to generate
+        if (hasChanges) {
+          this.lastGeneratedSpecHash =
+            this.changeDetector.getCurrentHash() || undefined;
+        }
+
+        return hasChanges;
+      } catch (error) {
+        console.warn(
+          chalk.yellow(`Error fetching spec for comparison: ${error}`)
+        );
+        // If there's an error, assume changes to be safe
+        return true;
+      }
     }
 
+    // For static specs, read from file system
     const specPath = join(
       this.config.resolvedPaths.backend,
       this.config.services.backend.apiSpec.path
@@ -278,32 +392,108 @@ export class DevSyncEngine extends EventEmitter {
    */
   private async generateClient(): Promise<void> {
     console.log(chalk.blue('🏗️  Generating TypeScript client...'));
+    const showDurations = this.config.sync.showStepDurations ?? false;
+
+    // Extract filename from apiSpec path (e.g., '/openapi.json' -> 'openapi.json')
+    const specFilename =
+      basename(this.config.services.backend.apiSpec.path) || 'openapi.json';
 
     const clientSwaggerPath = join(
       this.config.resolvedPaths.client,
-      'swagger.json'
+      specFilename
     );
 
-    // Handle runtime API specs (e.g., FastAPI)
-    if (this.config.services.backend.apiSpec.path.startsWith('runtime:')) {
-      const runtimePath = this.config.services.backend.apiSpec.path.replace('runtime:', '');
-      const apiUrl = `http://localhost:${this.config.services.backend.port}${runtimePath}`;
-      
-      console.log(chalk.dim(`Fetching OpenAPI spec from ${apiUrl}...`));
-      
-      try {
-        const response = await fetch(apiUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch OpenAPI spec: ${response.statusText}`);
+    // Check if we can skip generation based on spec hash
+    const specHashPath = join(
+      this.config.resolvedPaths.client,
+      '.openapi-hash'
+    );
+
+    try {
+      if (existsSync(specHashPath) && this.lastGeneratedSpecHash) {
+        const savedHash = readFileSync(specHashPath, 'utf-8').trim();
+        if (savedHash === this.lastGeneratedSpecHash) {
+          console.log(
+            chalk.gray('📊 Client already up-to-date with current spec')
+          );
+          return; // Skip generation entirely
         }
-        const spec = await response.json();
-        
-        const { writeFileSync } = await import('fs');
-        writeFileSync(clientSwaggerPath, JSON.stringify(spec, null, 2));
-        console.log(chalk.dim('Fetched and saved OpenAPI spec from runtime'));
-      } catch (error) {
-        console.error(chalk.red('Failed to fetch runtime OpenAPI spec:'), error);
-        throw new ApiSpecError(`Failed to fetch runtime API spec: ${error}`, apiUrl);
+      }
+    } catch (err) {
+      // Continue with generation
+    }
+
+    // Handle runtime API specs (e.g., FastAPI)
+    const isRuntimeSpec =
+      this.config.services.backend.apiSpec.path.startsWith('runtime:') ||
+      this.config.services.backend.apiSpec.path.startsWith('/');
+
+    if (isRuntimeSpec) {
+      const runtimePath = this.config.services.backend.apiSpec.path.replace(
+        'runtime:',
+        ''
+      );
+      const apiUrl = `http://localhost:${this.config.services.backend.port}${runtimePath}`;
+
+      console.log(chalk.dim(`Fetching OpenAPI spec from ${apiUrl}...`));
+
+      // Retry logic for runtime specs - backend might still be starting
+      const maxRetries = 5;
+      const retryDelay = 3000; // 3 seconds
+
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const attemptStartTime = Date.now();
+          const response = await fetch(apiUrl, {
+            signal: AbortSignal.timeout(10000), // 10 second timeout
+          });
+
+          if (!response.ok) {
+            throw new Error(
+              `Failed to fetch OpenAPI spec: ${response.statusText}`
+            );
+          }
+
+          const spec = await response.json();
+
+          const { writeFileSync } = await import('fs');
+          writeFileSync(clientSwaggerPath, JSON.stringify(spec, null, 2));
+
+          if (showDurations) {
+            console.log(
+              chalk.dim(
+                `    ⏱️  Fetched OpenAPI spec: ${Date.now() - attemptStartTime}ms`
+              )
+            );
+          } else {
+            console.log(
+              chalk.dim('Fetched and saved OpenAPI spec from runtime')
+            );
+          }
+
+          // Success - break out of retry loop
+          break;
+        } catch (error) {
+          console.log(
+            chalk.yellow(`Attempt ${attempt}/${maxRetries} failed: ${error}`)
+          );
+
+          if (attempt < maxRetries) {
+            console.log(chalk.dim(`Waiting ${retryDelay}ms before retry...`));
+            await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          } else {
+            console.error(
+              chalk.red(
+                'Failed to fetch runtime OpenAPI spec after all retries:'
+              ),
+              error
+            );
+            throw new ApiSpecError(
+              `Failed to fetch runtime API spec after ${maxRetries} attempts: ${error}`,
+              apiUrl
+            );
+          }
+        }
       }
     } else {
       // Copy static swagger.json to client directory
@@ -321,21 +511,66 @@ export class DevSyncEngine extends EventEmitter {
       }
     }
 
+    // Clean generated files before regeneration to avoid caching issues
+    try {
+      const cleanStartTime = Date.now();
+      const srcPath = join(this.config.resolvedPaths.client, 'src');
+      const { rmSync } = await import('fs');
+      rmSync(srcPath, { recursive: true, force: true });
+
+      if (showDurations) {
+        console.log(
+          chalk.dim(
+            `    ⏱️  Cleaned generated files: ${Date.now() - cleanStartTime}ms`
+          )
+        );
+      } else {
+        console.log(chalk.dim('Cleaned generated files'));
+      }
+    } catch (err) {
+      // Ignore errors, src directory might not exist
+    }
+
     // Implementation depends on generator type
     const { generator, generateCommand } = this.config.services.client;
+    const genCommandStartTime = Date.now();
 
-    if (generator === 'custom' && generateCommand) {
+    if (generateCommand) {
+      // Use the specified generate command
       await this.runCommand(generateCommand, this.config.resolvedPaths.client);
+    } else if (generator === '@hey-api/openapi-ts') {
+      // Default command for @hey-api/openapi-ts
+      await this.runCommand(
+        'npx @hey-api/openapi-ts',
+        this.config.resolvedPaths.client
+      );
     } else {
-      // Handle other generators (@hey-api/openapi-ts, etc.)
       throw new GeneratorError(
-        `Generator ${generator} not yet implemented`,
+        `No generate command specified for generator ${generator}`,
         generator,
         'generate'
       );
     }
 
-    console.log(chalk.green('✅ TypeScript client generated'));
+    if (showDurations) {
+      console.log(
+        chalk.green(
+          `✅ TypeScript client generated (${Date.now() - genCommandStartTime}ms)`
+        )
+      );
+    } else {
+      console.log(chalk.green('✅ TypeScript client generated'));
+    }
+
+    // Save the spec hash after successful generation
+    if (this.lastGeneratedSpecHash) {
+      try {
+        const { writeFileSync } = await import('fs');
+        writeFileSync(specHashPath, this.lastGeneratedSpecHash, 'utf-8');
+      } catch (err) {
+        // Non-critical, continue
+      }
+    }
   }
 
   /**
@@ -346,7 +581,27 @@ export class DevSyncEngine extends EventEmitter {
     if (!buildCommand) return;
 
     console.log(chalk.blue('🔨 Building client package...'));
-    await this.runCommand(buildCommand, this.config.resolvedPaths.client);
+
+    // Check if fast build is available and we're in development
+    const packageJsonPath = join(
+      this.config.resolvedPaths.client,
+      'package.json'
+    );
+    let useFastBuild = false;
+
+    try {
+      const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+      if (packageJson.scripts && packageJson.scripts['build:fast']) {
+        useFastBuild = true;
+      }
+    } catch (err) {
+      // Ignore, use regular build
+    }
+
+    const commandToRun = useFastBuild
+      ? buildCommand.replace('build', 'build:fast')
+      : buildCommand;
+    await this.runCommand(commandToRun, this.config.resolvedPaths.client);
     console.log(chalk.green('✅ Client package built'));
   }
 
@@ -431,20 +686,14 @@ export class DevSyncEngine extends EventEmitter {
     const paths: string[] = [];
 
     // Handle runtime API specs (e.g., FastAPI)
-    if (this.config.services.backend.apiSpec.path.startsWith('runtime:')) {
-      // For runtime specs, watch Python source files
-      const pythonPatterns = [
-        '**/*.py',
-        '!**/__pycache__/**',
-        '!**/venv/**',
-        '!**/.venv/**',
-        '!**/env/**',
-        '!**/.env/**',
-      ];
-      
-      for (const pattern of pythonPatterns) {
-        paths.push(join(this.config.resolvedPaths.backend, pattern));
-      }
+    const isRuntimeSpec =
+      this.config.services.backend.apiSpec.path.startsWith('runtime:') ||
+      this.config.services.backend.apiSpec.path.startsWith('/');
+
+    if (isRuntimeSpec) {
+      // For runtime specs, watch the entire backend directory
+      // The ignore patterns will be handled by chokidar's ignored option
+      paths.push(this.config.resolvedPaths.backend);
     } else {
       // Watch static API spec file
       const specPath = join(
@@ -468,13 +717,29 @@ export class DevSyncEngine extends EventEmitter {
    * Check if file is relevant for synchronization
    */
   private isRelevantFile(filePath: string): boolean {
-    const watchPaths = this.getWatchPaths();
-    return watchPaths.some(
-      (path) =>
-        filePath.includes(path) ||
-        filePath.endsWith('.json') ||
-        filePath.endsWith('.yaml') ||
-        filePath.endsWith('.yml')
+    // For runtime specs, any Python file change is relevant
+    const isRuntimeSpec =
+      this.config.services.backend.apiSpec.path.startsWith('runtime:') ||
+      this.config.services.backend.apiSpec.path.startsWith('/');
+
+    if (isRuntimeSpec) {
+      // Check if it's a Python file and not in ignored directories
+      if (
+        filePath.endsWith('.py') &&
+        !filePath.includes('__pycache__') &&
+        !filePath.includes('.venv') &&
+        !filePath.includes('venv/') &&
+        !filePath.includes('env/')
+      ) {
+        return true;
+      }
+    }
+
+    // Always relevant for API spec files
+    return (
+      filePath.endsWith('.json') ||
+      filePath.endsWith('.yaml') ||
+      filePath.endsWith('.yml')
     );
   }
 }
